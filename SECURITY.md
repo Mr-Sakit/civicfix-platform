@@ -16,6 +16,7 @@ CivicFix Platform will be designed with the following security goals:
 - Role-based access control
 - Environment-based secret configuration
 - GitHub Actions dependency review
+- GitHub CodeQL code scanning
 - Dependabot update automation
 - Repository vulnerability and misconfiguration scanning
 - Container image vulnerability scanning
@@ -28,6 +29,7 @@ CivicFix Platform will be designed with the following security goals:
 - CI runs dependency audit checks.
 - Security workflow scans repository dependencies and infrastructure configuration with Trivy.
 - Security workflow builds and scans backend/frontend container images with Trivy.
+- CodeQL analyzes JavaScript/TypeScript code and uploads findings to GitHub Code Scanning.
 - Kubernetes manifests use placeholder secret values and document that real values must be injected per environment.
 
 ## Recommended GitHub repository settings
