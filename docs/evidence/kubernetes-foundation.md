@@ -43,6 +43,7 @@ This validation confirms that the manifests and Kustomize references are structu
 Result:
 
 - Kustomize render passed.
+- The same render check is now included in the main CI workflow.
 
 ## Notes
 
