@@ -19,12 +19,20 @@ CREATE TABLE IF NOT EXISTS issue_categories (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS teams (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) UNIQUE NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS civic_issues (
   id SERIAL PRIMARY KEY,
   title VARCHAR(180) NOT NULL,
   description TEXT NOT NULL,
   category_id INTEGER NOT NULL REFERENCES issue_categories(id),
   reported_by INTEGER REFERENCES users(id),
+  assigned_team_id INTEGER REFERENCES teams(id),
   status VARCHAR(40) NOT NULL DEFAULT 'submitted',
   priority VARCHAR(30) NOT NULL DEFAULT 'normal',
   address TEXT,
@@ -43,4 +51,3 @@ CREATE TABLE IF NOT EXISTS issue_status_history (
   note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-

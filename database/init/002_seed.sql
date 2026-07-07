@@ -11,6 +11,15 @@ VALUES
   ('Public Safety', 'Unsafe sidewalks, exposed wires, damaged public facilities')
 ON CONFLICT (name) DO NOTHING;
 
+INSERT INTO teams (name, description)
+VALUES
+  ('Road Maintenance', 'Responsible for road surface damage, potholes, and street repairs'),
+  ('Lighting Crew', 'Responsible for street lighting repairs and electrical safety checks'),
+  ('Waste Operations', 'Responsible for waste collection and illegal dumping reports'),
+  ('Water Services', 'Responsible for leaks, drainage, and pipe-related reports'),
+  ('Public Safety Response', 'Responsible for urgent public safety hazards')
+ON CONFLICT (name) DO NOTHING;
+
 INSERT INTO users (full_name, email, role_id)
 SELECT 'CivicFix Demo Resident', 'resident.demo@civicfix.local', roles.id
 FROM roles

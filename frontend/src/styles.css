@@ -223,6 +223,17 @@ button:hover {
   margin: 12px 0;
 }
 
+.team-chip {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  font-weight: 800;
+}
+
 .operations-panel {
   display: grid;
   gap: 24px;

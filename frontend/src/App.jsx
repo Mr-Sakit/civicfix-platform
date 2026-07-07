@@ -12,6 +12,7 @@ const workflowStatuses = [
 export default function App() {
   const [apiStatus, setApiStatus] = useState("checking");
   const [categories, setCategories] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [issues, setIssues] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [statusNote, setStatusNote] = useState("");
@@ -28,10 +29,11 @@ export default function App() {
   useEffect(() => {
     async function loadPlatformStatus() {
       try {
-        const [healthResponse, categoriesResponse, issuesResponse] =
+        const [healthResponse, categoriesResponse, teamsResponse, issuesResponse] =
           await Promise.all([
           fetch(`${apiBaseUrl}/health`),
           fetch(`${apiBaseUrl}/api/categories`),
+          fetch(`${apiBaseUrl}/api/teams`),
           fetch(`${apiBaseUrl}/api/issues`)
         ]);
 
@@ -40,10 +42,12 @@ export default function App() {
         }
 
         const categoriesPayload = await categoriesResponse.json();
+        const teamsPayload = await teamsResponse.json();
         const issuesPayload = await issuesResponse.json();
 
         setApiStatus("connected");
         setCategories(categoriesPayload.data ?? []);
+        setTeams(teamsPayload.data ?? []);
         setIssues(issuesPayload.data ?? []);
       } catch (error) {
         setApiStatus("unavailable");
@@ -155,6 +159,49 @@ export default function App() {
       setStatusNote("");
       await refreshIssueHistory(selectedIssue.id);
       setOperationMessage("Issue status updated.");
+    } catch (error) {
+      setOperationMessage(error.message);
+    }
+  }
+
+  async function assignIssueToTeam(event) {
+    if (!selectedIssue) {
+      return;
+    }
+
+    const teamId = Number(event.target.value);
+
+    if (!teamId) {
+      return;
+    }
+
+    setOperationMessage("Assigning report...");
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/issues/${selectedIssue.id}/assignment`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ teamId })
+        }
+      );
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Could not assign report");
+      }
+
+      setIssues((current) =>
+        current.map((issue) =>
+          issue.id === selectedIssue.id ? { ...issue, ...payload.data } : issue
+        )
+      );
+      await refreshIssueHistory(selectedIssue.id);
+      setOperationMessage("Report assigned to team.");
     } catch (error) {
       setOperationMessage(error.message);
     }
@@ -289,6 +336,9 @@ export default function App() {
                     <span>Status: {issue.status}</span>
                     <span>Priority: {issue.priority}</span>
                   </footer>
+                  <p className="team-chip">
+                    Team: {issue.assigned_team ?? "Unassigned"}
+                  </p>
                   <button
                     className="secondary-button"
                     type="button"
@@ -333,10 +383,29 @@ export default function App() {
                   <dt>Address</dt>
                   <dd>{selectedIssue.address || "Not provided"}</dd>
                 </div>
+                <div>
+                  <dt>Assigned team</dt>
+                  <dd>{selectedIssue.assigned_team ?? "Unassigned"}</dd>
+                </div>
               </dl>
             </article>
 
             <article className="status-actions">
+              <label>
+                Assign team
+                <select
+                  value={selectedIssue.assigned_team_id ?? ""}
+                  onChange={assignIssueToTeam}
+                >
+                  <option value="">Choose responsible team</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <label>
                 Status update note
                 <textarea

@@ -12,6 +12,8 @@ Delivered:
 - Recent issue listing UI
 - Admin issue status workflow
 - Issue status history tracking
+- Team assignment workflow
+- PostgreSQL migration for team assignment
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Docker Compose runtime validation

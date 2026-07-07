@@ -41,7 +41,9 @@ app.get("/api", (_request, response) => {
     endpoints: [
       "/health",
       "/api/issues",
+      "/api/teams",
       "/api/issues/:id/status",
+      "/api/issues/:id/assignment",
       "/api/issues/:id/history",
       "/api/categories"
     ]
@@ -52,6 +54,17 @@ app.get("/api/categories", async (_request, response, next) => {
   try {
     const result = await query(
       "SELECT id, name, description FROM issue_categories ORDER BY name"
+    );
+    response.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/teams", async (_request, response, next) => {
+  try {
+    const result = await query(
+      "SELECT id, name, description FROM teams ORDER BY name"
     );
     response.json({ data: result.rows });
   } catch (error) {
@@ -73,9 +86,12 @@ app.get("/api/issues", async (_request, response, next) => {
         ci.longitude,
         ci.created_at,
         ci.updated_at,
-        ic.name AS category
+        ic.name AS category,
+        teams.id AS assigned_team_id,
+        teams.name AS assigned_team
       FROM civic_issues ci
       JOIN issue_categories ic ON ic.id = ci.category_id
+      LEFT JOIN teams ON teams.id = ci.assigned_team_id
       ORDER BY ci.created_at DESC
       LIMIT 25
     `);
@@ -103,12 +119,71 @@ app.post("/api/issues", async (request, response, next) => {
           (title, description, category_id, address, latitude, longitude)
         VALUES
           ($1, $2, $3, $4, $5, $6)
-        RETURNING id, title, description, status, priority, address, latitude, longitude, created_at
+        RETURNING id, title, description, status, priority, address, latitude, longitude, assigned_team_id, created_at, updated_at
       `,
       [title, description, categoryId, address, latitude, longitude]
     );
 
     response.status(201).json({ data: result.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch("/api/issues/:id/assignment", async (request, response, next) => {
+  try {
+    const issueId = Number(request.params.id);
+    const teamId = Number(request.body.teamId);
+
+    if (!Number.isInteger(issueId)) {
+      return response.status(400).json({ message: "A valid issue id is required" });
+    }
+
+    if (!Number.isInteger(teamId)) {
+      return response.status(400).json({ message: "A valid teamId is required" });
+    }
+
+    const team = await query("SELECT id, name FROM teams WHERE id = $1", [teamId]);
+
+    if (team.rowCount === 0) {
+      return response.status(404).json({ message: "Team not found" });
+    }
+
+    const updatedIssue = await query(
+      `
+        UPDATE civic_issues
+        SET assigned_team_id = $1, status = 'assigned', updated_at = NOW()
+        WHERE id = $2
+        RETURNING id, title, description, status, priority, address, latitude, longitude, assigned_team_id, created_at, updated_at
+      `,
+      [teamId, issueId]
+    );
+
+    if (updatedIssue.rowCount === 0) {
+      return response.status(404).json({ message: "Issue not found" });
+    }
+
+    await query(
+      `
+        INSERT INTO issue_status_history
+          (issue_id, old_status, new_status, note)
+        VALUES
+          ($1, $2, $3, $4)
+      `,
+      [
+        issueId,
+        null,
+        "assigned",
+        `Assigned to ${team.rows[0].name}`
+      ]
+    );
+
+    response.json({
+      data: {
+        ...updatedIssue.rows[0],
+        assigned_team: team.rows[0].name
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -178,7 +253,7 @@ app.patch("/api/issues/:id/status", async (request, response, next) => {
         UPDATE civic_issues
         SET status = $1, updated_at = NOW()
         WHERE id = $2
-        RETURNING id, title, description, status, priority, address, latitude, longitude, created_at, updated_at
+        RETURNING id, title, description, status, priority, address, latitude, longitude, assigned_team_id, created_at, updated_at
       `,
       [status, issueId]
     );
