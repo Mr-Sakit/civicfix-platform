@@ -5,6 +5,7 @@ namespace: civicfix-prod
 
 resources:
   - ../../base
+  - ingress.yaml
 
 patches:
   - path: namespace-patch.yaml

@@ -20,6 +20,7 @@ The development overlay:
 - uses one backend replica
 - uses lower CPU and memory requests
 - keeps local-friendly API and CORS values
+- defines local-style frontend and API ingress hosts
 
 The production overlay:
 
@@ -29,6 +30,7 @@ The production overlay:
 - uses larger CPU and memory requests
 - increases PostgreSQL storage request
 - uses production-style URL placeholders
+- defines production-style frontend and API ingress hosts
 
 ## GitOps integration
 

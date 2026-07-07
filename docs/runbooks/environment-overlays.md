@@ -45,3 +45,4 @@ kubectl -n civicfix-prod get pods,svc
 - The production overlay still uses demo secret values and production URL placeholders.
 - Before a real shared deployment, replace demo secrets with a proper secret-management approach.
 - Before a real public deployment, add ingress, DNS, and TLS configuration.
+- The overlays now include ingress/TLS placeholders; replace placeholder hostnames before real deployment.
