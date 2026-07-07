@@ -18,6 +18,7 @@ Current evidence:
 - [Local validation](evidence/local-validation.md)
 - [Core workflow](evidence/core-workflow.md)
 - [Observability foundation](evidence/observability-foundation.md)
+- [CI/CD foundation](evidence/ci-cd-foundation.md)
 
 Runbooks:
 
