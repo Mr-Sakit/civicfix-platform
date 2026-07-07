@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: civicfix-platform-root
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: civicfix-platform-root
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  project: civicfix-platform
+  source:
+    repoURL: git@github.com:Mr-Sakit/civicfix-platform.git
+    targetRevision: main
+    path: deploy/gitops/argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

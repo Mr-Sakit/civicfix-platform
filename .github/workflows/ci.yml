@@ -77,5 +77,11 @@ jobs:
       - name: Render Kubernetes monitoring
         run: kubectl kustomize deploy/kubernetes/monitoring
 
+      - name: Render Argo CD GitOps bootstrap
+        run: kubectl kustomize deploy/gitops/argocd/bootstrap
+
+      - name: Render Argo CD GitOps applications
+        run: kubectl kustomize deploy/gitops/argocd/apps
+
       - name: Validate Prometheus alert rules
         run: docker run --rm --entrypoint promtool -v "$PWD:/workspace" prom/prometheus:v3.7.3 check rules /workspace/deploy/kubernetes/monitoring/prometheus-rules/civicfix-alerts.yaml
