@@ -15,8 +15,27 @@ CivicFix Platform will be designed with the following security goals:
 
 - Role-based access control
 - Environment-based secret configuration
-- GitHub Actions security scanning
-- Container image scanning
-- Kubernetes secret management
+- GitHub Actions dependency review
+- Dependabot update automation
+- Repository vulnerability and misconfiguration scanning
+- Container image vulnerability scanning
+- Kubernetes secret management pattern
 - HTTPS ingress in cloud environments
 
+## Implemented controls
+
+- Dependabot is configured for npm packages, GitHub Actions, and Docker base images.
+- CI runs dependency audit checks.
+- Security workflow scans repository dependencies and infrastructure configuration with Trivy.
+- Security workflow builds and scans backend/frontend container images with Trivy.
+- Kubernetes manifests use placeholder secret values and document that real values must be injected per environment.
+
+## Recommended GitHub repository settings
+
+Enable these in GitHub repository settings:
+
+- Dependabot alerts
+- Dependabot security updates
+- Secret scanning
+- Push protection
+- Code scanning alerts

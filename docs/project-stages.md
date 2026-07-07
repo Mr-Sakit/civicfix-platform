@@ -19,6 +19,8 @@ Delivered:
 - CI dependency audit
 - CI container image build checks
 - CI Kubernetes manifest validation
+- Dependabot dependency update automation
+- Security workflow with repository and container image scans
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -40,13 +42,20 @@ Planned:
 
 ## Stage 3: DevOps foundation
 
-Planned:
+In progress:
 
 - CI checks
 - Container builds
 - Security scans
 - Image publishing
 - Environment configuration
+
+Delivered:
+
+- Dependency audit in CI
+- Dependabot configuration
+- Trivy repository scan
+- Trivy container image scan
 
 ## Stage 4: Cloud and Kubernetes
 
