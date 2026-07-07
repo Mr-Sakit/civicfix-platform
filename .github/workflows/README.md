@@ -10,3 +10,6 @@ Planned workflows:
 - Security scanning
 - Deployment promotion
 
+Current workflow:
+
+- `ci.yml` validates dependency installation, dependency audit, backend checks, frontend build, and Docker image builds.
