@@ -16,3 +16,4 @@ Planned sections:
 Current evidence:
 
 - [Local validation](evidence/local-validation.md)
+- [Core workflow](evidence/core-workflow.md)

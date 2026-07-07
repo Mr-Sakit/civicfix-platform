@@ -10,6 +10,8 @@ Delivered:
 - Backend API scaffold
 - Citizen issue submission UI
 - Recent issue listing UI
+- Admin issue status workflow
+- Issue status history tracking
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Docker Compose runtime validation

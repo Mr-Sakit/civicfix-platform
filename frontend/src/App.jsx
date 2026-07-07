@@ -2,11 +2,21 @@ import React, { useEffect, useState } from "react";
 import "./styles.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const workflowStatuses = [
+  { value: "submitted", label: "Submitted" },
+  { value: "in_review", label: "In review" },
+  { value: "assigned", label: "Assigned" },
+  { value: "resolved", label: "Resolved" }
+];
 
 export default function App() {
   const [apiStatus, setApiStatus] = useState("checking");
   const [categories, setCategories] = useState([]);
   const [issues, setIssues] = useState([]);
+  const [selectedIssueId, setSelectedIssueId] = useState(null);
+  const [statusNote, setStatusNote] = useState("");
+  const [history, setHistory] = useState([]);
+  const [operationMessage, setOperationMessage] = useState("");
   const [formState, setFormState] = useState({
     title: "",
     description: "",
@@ -42,6 +52,8 @@ export default function App() {
 
     loadPlatformStatus();
   }, []);
+
+  const selectedIssue = issues.find((issue) => issue.id === selectedIssueId);
 
   function updateFormField(event) {
     const { name, value } = event.target;
@@ -82,6 +94,69 @@ export default function App() {
       setFormMessage("Issue report submitted successfully.");
     } catch (error) {
       setFormMessage(error.message);
+    }
+  }
+
+  async function refreshIssueHistory(issueId) {
+    const response = await fetch(`${apiBaseUrl}/api/issues/${issueId}/history`);
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.message ?? "Could not load issue history");
+    }
+
+    setHistory(payload.data ?? []);
+  }
+
+  async function selectIssue(issue) {
+    setSelectedIssueId(issue.id);
+    setOperationMessage("");
+
+    try {
+      await refreshIssueHistory(issue.id);
+    } catch (error) {
+      setOperationMessage(error.message);
+    }
+  }
+
+  async function updateIssueStatus(nextStatus) {
+    if (!selectedIssue) {
+      return;
+    }
+
+    setOperationMessage("Updating issue status...");
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/issues/${selectedIssue.id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status: nextStatus,
+            note: statusNote
+          })
+        }
+      );
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Could not update status");
+      }
+
+      setIssues((current) =>
+        current.map((issue) =>
+          issue.id === selectedIssue.id ? { ...issue, ...payload.data } : issue
+        )
+      );
+      setStatusNote("");
+      await refreshIssueHistory(selectedIssue.id);
+      setOperationMessage("Issue status updated.");
+    } catch (error) {
+      setOperationMessage(error.message);
     }
   }
 
@@ -214,6 +289,13 @@ export default function App() {
                     <span>Status: {issue.status}</span>
                     <span>Priority: {issue.priority}</span>
                   </footer>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => selectIssue(issue)}
+                  >
+                    Manage report
+                  </button>
                 </li>
               ))}
             </ul>
@@ -221,6 +303,94 @@ export default function App() {
             <p>No reports loaded yet.</p>
           )}
         </section>
+      </section>
+
+      <section className="card operations-panel">
+        <div>
+          <p className="eyebrow dark-eyebrow">Operations workflow</p>
+          <h2>Issue status management</h2>
+          <p>
+            Select a report, move it through the maintenance workflow, and keep
+            a status history for audit and operations evidence.
+          </p>
+        </div>
+
+        {selectedIssue ? (
+          <div className="operations-grid">
+            <article className="selected-issue">
+              <h3>{selectedIssue.title}</h3>
+              <p>{selectedIssue.description}</p>
+              <dl>
+                <div>
+                  <dt>Current status</dt>
+                  <dd>{selectedIssue.status}</dd>
+                </div>
+                <div>
+                  <dt>Category</dt>
+                  <dd>{selectedIssue.category ?? "Uncategorized"}</dd>
+                </div>
+                <div>
+                  <dt>Address</dt>
+                  <dd>{selectedIssue.address || "Not provided"}</dd>
+                </div>
+              </dl>
+            </article>
+
+            <article className="status-actions">
+              <label>
+                Status update note
+                <textarea
+                  value={statusNote}
+                  onChange={(event) => setStatusNote(event.target.value)}
+                  placeholder="Add a short operational note."
+                  rows="4"
+                />
+              </label>
+
+              <div className="status-button-row">
+                {workflowStatuses.map((status) => (
+                  <button
+                    key={status.value}
+                    className={
+                      selectedIssue.status === status.value
+                        ? "status-button active-status"
+                        : "status-button"
+                    }
+                    type="button"
+                    onClick={() => updateIssueStatus(status.value)}
+                  >
+                    {status.label}
+                  </button>
+                ))}
+              </div>
+
+              {operationMessage ? (
+                <p className="form-message">{operationMessage}</p>
+              ) : null}
+            </article>
+
+            <article className="history-panel">
+              <h3>Status history</h3>
+              {history.length > 0 ? (
+                <ol>
+                  {history.map((entry) => (
+                    <li key={entry.id}>
+                      <strong>
+                        {entry.old_status ?? "created"} → {entry.new_status}
+                      </strong>
+                      {entry.note ? <p>{entry.note}</p> : null}
+                      <span>{new Date(entry.created_at).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>No status history yet.</p>
+              )}
+            </article>
+          </div>
+        ) : (
+          <p>Select “Manage report” from a recent report to begin.</p>
+        )}
       </section>
     </main>
   );
