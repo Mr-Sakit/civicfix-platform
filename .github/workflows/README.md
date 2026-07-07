@@ -16,3 +16,4 @@ Current workflow:
 - `ci.yml` also validates that the Kubernetes Kustomize base renders successfully.
 - `container-delivery.yml` builds and publishes backend/frontend images to GitHub Container Registry.
 - `security.yml` scans dependency changes, repository configuration, and container images for high/critical security issues.
+- `codeql.yml` runs GitHub CodeQL analysis and uploads results to GitHub Code Scanning.

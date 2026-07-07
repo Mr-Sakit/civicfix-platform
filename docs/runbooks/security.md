@@ -24,13 +24,21 @@ It checks:
 The security workflow is defined in:
 
 - `.github/workflows/security.yml`
+- `.github/workflows/codeql.yml`
 
-It runs:
+The security workflow runs:
 
 - dependency review on pull requests
 - Trivy repository vulnerability and misconfiguration scan
 - Trivy backend container image scan
 - Trivy frontend container image scan
+
+The CodeQL workflow runs:
+
+- JavaScript/TypeScript code scanning
+- security-extended queries
+- security-and-quality queries
+- upload to GitHub Code Scanning
 
 ## Manual run
 
@@ -38,7 +46,7 @@ In GitHub:
 
 1. Open the repository.
 2. Go to Actions.
-3. Select `CivicFix Security Checks`.
+3. Select `CivicFix Security Checks` or `CivicFix CodeQL`.
 4. Click `Run workflow`.
 
 ## If a security check fails
@@ -58,4 +66,3 @@ Enable these in GitHub settings:
 - Secret scanning
 - Push protection
 - Code scanning alerts
-
