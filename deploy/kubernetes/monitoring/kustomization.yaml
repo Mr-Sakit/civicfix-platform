@@ -34,3 +34,10 @@ configMapGenerator:
     options:
       labels:
         app.kubernetes.io/name: civicfix-grafana
+
+  - name: civicfix-prometheus-rules
+    files:
+      - civicfix-alerts.yaml=prometheus-rules/civicfix-alerts.yaml
+    options:
+      labels:
+        app.kubernetes.io/name: civicfix-prometheus

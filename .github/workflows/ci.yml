@@ -76,3 +76,6 @@ jobs:
 
       - name: Render Kubernetes monitoring
         run: kubectl kustomize deploy/kubernetes/monitoring
+
+      - name: Validate Prometheus alert rules
+        run: docker run --rm -v "$PWD:/workspace" prom/prometheus:v3.7.3 promtool check rules /workspace/deploy/kubernetes/monitoring/prometheus-rules/civicfix-alerts.yaml

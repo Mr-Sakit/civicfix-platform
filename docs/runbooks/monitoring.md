@@ -40,6 +40,10 @@ Useful query:
 
 - `civicfix_issues_total`
 
+View alert rules:
+
+- `http://localhost:9090/alerts`
+
 ## Access Grafana locally
 
 ```powershell
@@ -67,4 +71,3 @@ The dashboard includes:
 - total civic issues
 - issues by status
 - issues by assigned team
-

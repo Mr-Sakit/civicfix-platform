@@ -23,6 +23,7 @@ Current evidence:
 - [Kubernetes foundation](evidence/kubernetes-foundation.md)
 - [Security foundation](evidence/security-foundation.md)
 - [Monitoring foundation](evidence/monitoring-foundation.md)
+- [Alerting foundation](evidence/alerting-foundation.md)
 
 Runbooks:
 
@@ -31,3 +32,4 @@ Runbooks:
 - [Kubernetes foundation](runbooks/kubernetes.md)
 - [Security foundation](runbooks/security.md)
 - [Monitoring foundation](runbooks/monitoring.md)
+- [Alerting foundation](runbooks/alerting.md)
