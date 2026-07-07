@@ -24,6 +24,7 @@ Updated after adding the first citizen reporting workflow.
 | Backend container health | Passed |
 | Backend database connectivity | Passed |
 | Frontend HTTP response | Passed: HTTP 200 |
+| Frontend browser rendering issue | Fixed: added missing React import |
 
 ## Commands used
 
@@ -53,3 +54,7 @@ Validated local endpoints:
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:4000/health`
 - Backend categories API: `http://localhost:4000/api/categories`
+
+## Fix notes
+
+After the first browser check, the frontend showed a blank white page. The served Vite module compiled JSX to `React.createElement(...)`, but `frontend/src/App.jsx` did not import the `React` object. The fix was to update the import to include the default React import.
