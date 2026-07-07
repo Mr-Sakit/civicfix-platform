@@ -17,7 +17,13 @@ Updated after adding the first citizen reporting workflow.
 | npm vulnerability audit during install | Passed: 0 vulnerabilities |
 | Backend JavaScript syntax check | Passed |
 | Frontend production build | Passed |
-| Docker availability check | Docker CLI not available on this workstation path |
+| Docker availability check | Passed |
+| Docker Compose stack startup | Passed |
+| PostgreSQL container health | Passed |
+| Redis container health | Passed |
+| Backend container health | Passed |
+| Backend database connectivity | Passed |
+| Frontend HTTP response | Passed: HTTP 200 |
 
 ## Commands used
 
@@ -26,12 +32,24 @@ npm install
 npm ci --cache .npm-cache
 npm run backend:check
 npm run frontend:build
+docker info
+docker-compose up --build -d
+docker-compose ps
 ```
 
 ## Notes
 
-Docker Compose configuration has been prepared, but the local Docker runtime could not be validated because the `docker` command is not currently available from this environment.
-
-The next local runtime validation should be performed after Docker Desktop is installed and available in the terminal.
-
 The clean install initially failed because the sandboxed environment could not reach the npm registry. After registry access was allowed for the install command, `npm ci --cache .npm-cache` completed successfully.
+
+Docker runtime validation was completed after Docker Desktop became available. The full stack started successfully:
+
+- `civicfix-frontend`
+- `civicfix-backend`
+- `civicfix-postgres`
+- `civicfix-redis`
+
+Validated local endpoints:
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:4000/health`
+- Backend categories API: `http://localhost:4000/api/categories`

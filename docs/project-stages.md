@@ -12,6 +12,7 @@ Delivered:
 - Recent issue listing UI
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
+- Docker Compose runtime validation
 - Initial documentation structure
 - Local validation evidence
 - Initial CI workflow

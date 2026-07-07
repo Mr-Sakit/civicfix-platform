@@ -29,6 +29,19 @@ docker compose up --build
 - Backend health: `http://localhost:4000/health`
 - API summary: `http://localhost:4000/api`
 
+Check containers:
+
+```bash
+docker-compose ps
+```
+
+Expected services:
+
+- `civicfix-frontend`
+- `civicfix-backend`
+- `civicfix-postgres`
+- `civicfix-redis`
+
 ## Stop the platform
 
 ```bash
