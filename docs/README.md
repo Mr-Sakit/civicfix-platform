@@ -13,3 +13,6 @@ Planned sections:
 - Deployment evidence
 - Monitoring evidence
 
+Current evidence:
+
+- [Local validation](evidence/local-validation.md)

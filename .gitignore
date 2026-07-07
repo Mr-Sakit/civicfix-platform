@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.npm-cache/
 
 # Environment files
 .env
@@ -28,4 +29,3 @@ Thumbs.db
 .terraform/
 *.tfstate
 *.tfstate.*
-

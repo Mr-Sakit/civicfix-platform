@@ -11,6 +11,8 @@ Delivered:
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Initial documentation structure
+- Local validation evidence
+- Initial CI workflow
 
 ## Stage 2: Core CivicFix features
 
