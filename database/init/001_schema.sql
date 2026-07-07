@@ -1,0 +1,45 @@
+CREATE TABLE IF NOT EXISTS roles (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  full_name VARCHAR(120) NOT NULL,
+  email VARCHAR(160) UNIQUE NOT NULL,
+  role_id INTEGER NOT NULL REFERENCES roles(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS issue_categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) UNIQUE NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS civic_issues (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(180) NOT NULL,
+  description TEXT NOT NULL,
+  category_id INTEGER NOT NULL REFERENCES issue_categories(id),
+  reported_by INTEGER REFERENCES users(id),
+  status VARCHAR(40) NOT NULL DEFAULT 'submitted',
+  priority VARCHAR(30) NOT NULL DEFAULT 'normal',
+  address TEXT,
+  latitude NUMERIC(9, 6),
+  longitude NUMERIC(9, 6),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS issue_status_history (
+  id SERIAL PRIMARY KEY,
+  issue_id INTEGER NOT NULL REFERENCES civic_issues(id) ON DELETE CASCADE,
+  old_status VARCHAR(40),
+  new_status VARCHAR(40) NOT NULL,
+  changed_by INTEGER REFERENCES users(id),
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
