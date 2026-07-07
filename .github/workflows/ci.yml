@@ -74,6 +74,12 @@ jobs:
       - name: Render Kubernetes base
         run: kubectl kustomize deploy/kubernetes/base
 
+      - name: Render Kubernetes dev overlay
+        run: kubectl kustomize deploy/kubernetes/overlays/dev
+
+      - name: Render Kubernetes prod overlay
+        run: kubectl kustomize deploy/kubernetes/overlays/prod
+
       - name: Render Kubernetes monitoring
         run: kubectl kustomize deploy/kubernetes/monitoring
 

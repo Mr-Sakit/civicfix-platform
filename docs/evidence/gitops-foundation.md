@@ -20,7 +20,8 @@ The bootstrap layer defines:
 
 The applications layer defines:
 
-- `civicfix-application`, which syncs `deploy/kubernetes/base`
+- `civicfix-dev-application`, which syncs `deploy/kubernetes/overlays/dev`
+- `civicfix-prod-application`, which syncs `deploy/kubernetes/overlays/prod`
 - `civicfix-monitoring`, which syncs `deploy/kubernetes/monitoring`
 
 ## GitOps model
@@ -30,7 +31,7 @@ The implementation uses the app-of-apps pattern:
 1. A platform operator applies the bootstrap layer to an Argo CD-enabled cluster.
 2. Argo CD creates the root CivicFix application.
 3. The root application reads the `deploy/gitops/argocd/apps` path.
-4. Argo CD continuously syncs the CivicFix application and monitoring stack from Git.
+4. Argo CD continuously syncs the CivicFix dev environment, prod environment, and monitoring stack from Git.
 
 ## Validation
 
@@ -39,18 +40,20 @@ The GitOps manifests should render successfully with:
 ```powershell
 kubectl kustomize deploy/gitops/argocd/bootstrap
 kubectl kustomize deploy/gitops/argocd/apps
+kubectl kustomize deploy/kubernetes/overlays/dev
+kubectl kustomize deploy/kubernetes/overlays/prod
 ```
 
 Result:
 
 - GitOps bootstrap render is included in CI.
 - GitOps application render is included in CI.
+- Dev and prod environment overlay rendering is included in CI.
 
 ## Notes
 
 This foundation assumes Argo CD is already installed in the target Kubernetes cluster. Later stages can add:
 
-- AKS-specific environment overlays
 - ingress and TLS configuration
 - sealed secrets or external secret management
 - image tag promotion from CI/CD into GitOps manifests

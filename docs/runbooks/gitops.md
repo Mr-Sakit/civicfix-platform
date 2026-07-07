@@ -18,6 +18,8 @@ From the repository root:
 ```powershell
 kubectl kustomize deploy/gitops/argocd/bootstrap
 kubectl kustomize deploy/gitops/argocd/apps
+kubectl kustomize deploy/kubernetes/overlays/dev
+kubectl kustomize deploy/kubernetes/overlays/prod
 ```
 
 ## Bootstrap CivicFix in Argo CD
@@ -43,8 +45,18 @@ kubectl -n argocd get applications
 Expected applications:
 
 - `civicfix-platform-root`
-- `civicfix-application`
+- `civicfix-dev-application`
+- `civicfix-prod-application`
 - `civicfix-monitoring`
+
+## Environment model
+
+The GitOps setup uses separate application overlays:
+
+- `dev` deploys to the `civicfix-dev` namespace with smaller replica and resource settings.
+- `prod` deploys to the `civicfix-prod` namespace with higher replica and resource settings.
+
+This gives the project a simple promotion path: changes can be validated in the development overlay before the production overlay is updated.
 
 ## Recovery notes
 

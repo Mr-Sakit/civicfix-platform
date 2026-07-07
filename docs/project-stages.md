@@ -25,6 +25,7 @@ Delivered:
 - Prometheus and Grafana monitoring foundation
 - Prometheus alerting rules
 - Argo CD GitOps application definitions
+- Kubernetes dev and prod overlays
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -70,6 +71,7 @@ In progress:
 - Namespace, services, deployments, StatefulSet, ConfigMap, and Secret pattern
 - Kubernetes runbook and validation evidence
 - Argo CD app-of-apps GitOps foundation
+- Environment overlays for development and production
 
 Planned:
 
@@ -82,8 +84,10 @@ Delivered:
 
 - Argo CD AppProject for CivicFix
 - Argo CD root application for app-of-apps bootstrap
-- Argo CD applications for the CivicFix platform and monitoring stack
+- Argo CD applications for CivicFix dev, CivicFix prod, and monitoring
+- Kubernetes Kustomize overlays for dev and prod
 - CI validation for GitOps manifest rendering
+- CI validation for environment overlay rendering
 
 ## Stage 5: Observability and operations
 

@@ -14,12 +14,14 @@ Current Kubernetes foundation:
 - `kubernetes/base` contains the first Kustomize base for CivicFix Platform.
 - It defines the frontend, backend, PostgreSQL, Redis, shared configuration, and namespace resources.
 - It is designed to support later overlays for local Kubernetes, AKS, and GitOps promotion.
+- `kubernetes/overlays/dev` contains a lightweight development environment overlay.
+- `kubernetes/overlays/prod` contains a production-oriented environment overlay.
 - `kubernetes/monitoring` contains the first Prometheus and Grafana monitoring foundation.
 
 Current GitOps foundation:
 
 - `gitops/argocd/bootstrap` contains the Argo CD project and root application.
-- `gitops/argocd/apps` contains Argo CD applications for the CivicFix platform and monitoring stack.
+- `gitops/argocd/apps` contains Argo CD applications for the CivicFix dev environment, prod environment, and monitoring stack.
 - The root application follows the app-of-apps pattern so Argo CD can continuously sync platform layers from Git.
 
 Current delivery image targets:
@@ -41,6 +43,13 @@ Render the monitoring foundation:
 kubectl kustomize deploy/kubernetes/monitoring
 ```
 
+Render the environment overlays:
+
+```powershell
+kubectl kustomize deploy/kubernetes/overlays/dev
+kubectl kustomize deploy/kubernetes/overlays/prod
+```
+
 Render the GitOps bootstrap:
 
 ```powershell
@@ -57,4 +66,11 @@ Apply the Kubernetes base to the active cluster context:
 
 ```powershell
 kubectl apply -k deploy/kubernetes/base
+```
+
+Apply an environment overlay:
+
+```powershell
+kubectl apply -k deploy/kubernetes/overlays/dev
+kubectl apply -k deploy/kubernetes/overlays/prod
 ```

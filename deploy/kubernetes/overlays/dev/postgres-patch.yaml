@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: civicfix-postgres
+  labels:
+    civicfix.io/environment: dev
+spec:
+  template:
+    metadata:
+      labels:
+        civicfix.io/environment: dev
