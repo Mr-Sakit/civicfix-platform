@@ -14,6 +14,7 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [teams, setTeams] = useState([]);
   const [issues, setIssues] = useState([]);
+  const [metrics, setMetrics] = useState(null);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [statusNote, setStatusNote] = useState("");
   const [history, setHistory] = useState([]);
@@ -29,12 +30,19 @@ export default function App() {
   useEffect(() => {
     async function loadPlatformStatus() {
       try {
-        const [healthResponse, categoriesResponse, teamsResponse, issuesResponse] =
+        const [
+          healthResponse,
+          categoriesResponse,
+          teamsResponse,
+          issuesResponse,
+          metricsResponse
+        ] =
           await Promise.all([
           fetch(`${apiBaseUrl}/health`),
           fetch(`${apiBaseUrl}/api/categories`),
           fetch(`${apiBaseUrl}/api/teams`),
-          fetch(`${apiBaseUrl}/api/issues`)
+          fetch(`${apiBaseUrl}/api/issues`),
+          fetch(`${apiBaseUrl}/api/metrics/summary`)
         ]);
 
         if (!healthResponse.ok) {
@@ -44,11 +52,13 @@ export default function App() {
         const categoriesPayload = await categoriesResponse.json();
         const teamsPayload = await teamsResponse.json();
         const issuesPayload = await issuesResponse.json();
+        const metricsPayload = await metricsResponse.json();
 
         setApiStatus("connected");
         setCategories(categoriesPayload.data ?? []);
         setTeams(teamsPayload.data ?? []);
         setIssues(issuesPayload.data ?? []);
+        setMetrics(metricsPayload.data ?? null);
       } catch (error) {
         setApiStatus("unavailable");
       }
@@ -89,6 +99,7 @@ export default function App() {
       }
 
       setIssues((current) => [payload.data, ...current]);
+      await refreshMetrics();
       setFormState({
         title: "",
         description: "",
@@ -158,6 +169,7 @@ export default function App() {
       );
       setStatusNote("");
       await refreshIssueHistory(selectedIssue.id);
+      await refreshMetrics();
       setOperationMessage("Issue status updated.");
     } catch (error) {
       setOperationMessage(error.message);
@@ -201,10 +213,22 @@ export default function App() {
         )
       );
       await refreshIssueHistory(selectedIssue.id);
+      await refreshMetrics();
       setOperationMessage("Report assigned to team.");
     } catch (error) {
       setOperationMessage(error.message);
     }
+  }
+
+  async function refreshMetrics() {
+    const response = await fetch(`${apiBaseUrl}/api/metrics/summary`);
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.message ?? "Could not refresh metrics");
+    }
+
+    setMetrics(payload.data ?? null);
   }
 
   return (
@@ -246,6 +270,52 @@ export default function App() {
             infrastructure-as-code, and operational runbooks.
           </p>
         </article>
+      </section>
+
+      <section className="card metrics-panel">
+        <div>
+          <p className="eyebrow dark-eyebrow">Platform metrics</p>
+          <h2>Operational snapshot</h2>
+          <p>
+            These metrics make the app easier to monitor later with Prometheus
+            and Grafana.
+          </p>
+        </div>
+
+        {metrics ? (
+          <div className="metrics-grid">
+            <article className="metric-card primary-metric">
+              <span>Total reports</span>
+              <strong>{metrics.totalIssues}</strong>
+            </article>
+
+            <article className="metric-card">
+              <span>By status</span>
+              <ul>
+                {metrics.byStatus.map((item) => (
+                  <li key={item.status}>
+                    <span>{item.status}</span>
+                    <strong>{item.count}</strong>
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="metric-card">
+              <span>By team</span>
+              <ul>
+                {metrics.byTeam.map((item) => (
+                  <li key={item.name}>
+                    <span>{item.name}</span>
+                    <strong>{item.count}</strong>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        ) : (
+          <p>Metrics are not available yet.</p>
+        )}
       </section>
 
       <section className="card">

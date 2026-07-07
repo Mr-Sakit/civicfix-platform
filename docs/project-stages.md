@@ -14,6 +14,8 @@ Delivered:
 - Issue status history tracking
 - Team assignment workflow
 - PostgreSQL migration for team assignment
+- Application metrics endpoint
+- Frontend operational metrics panel
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Docker Compose runtime validation

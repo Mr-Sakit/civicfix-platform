@@ -45,6 +45,8 @@ app.get("/api", (_request, response) => {
       "/api/issues/:id/status",
       "/api/issues/:id/assignment",
       "/api/issues/:id/history",
+      "/api/metrics/summary",
+      "/metrics",
       "/api/categories"
     ]
   });
@@ -67,6 +69,87 @@ app.get("/api/teams", async (_request, response, next) => {
       "SELECT id, name, description FROM teams ORDER BY name"
     );
     response.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/metrics/summary", async (_request, response, next) => {
+  try {
+    const [totalIssues, byStatus, byCategory, byTeam] = await Promise.all([
+      query("SELECT COUNT(*)::int AS count FROM civic_issues"),
+      query(`
+        SELECT status, COUNT(*)::int AS count
+        FROM civic_issues
+        GROUP BY status
+        ORDER BY status
+      `),
+      query(`
+        SELECT issue_categories.name, COUNT(civic_issues.id)::int AS count
+        FROM issue_categories
+        LEFT JOIN civic_issues ON civic_issues.category_id = issue_categories.id
+        GROUP BY issue_categories.name
+        ORDER BY issue_categories.name
+      `),
+      query(`
+        SELECT COALESCE(teams.name, 'Unassigned') AS name, COUNT(civic_issues.id)::int AS count
+        FROM civic_issues
+        LEFT JOIN teams ON teams.id = civic_issues.assigned_team_id
+        GROUP BY COALESCE(teams.name, 'Unassigned')
+        ORDER BY name
+      `)
+    ]);
+
+    response.json({
+      data: {
+        totalIssues: totalIssues.rows[0].count,
+        byStatus: byStatus.rows,
+        byCategory: byCategory.rows,
+        byTeam: byTeam.rows
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/metrics", async (_request, response, next) => {
+  try {
+    const [totalIssues, byStatus, byTeam] = await Promise.all([
+      query("SELECT COUNT(*)::int AS count FROM civic_issues"),
+      query(`
+        SELECT status, COUNT(*)::int AS count
+        FROM civic_issues
+        GROUP BY status
+        ORDER BY status
+      `),
+      query(`
+        SELECT COALESCE(teams.name, 'unassigned') AS team, COUNT(civic_issues.id)::int AS count
+        FROM civic_issues
+        LEFT JOIN teams ON teams.id = civic_issues.assigned_team_id
+        GROUP BY COALESCE(teams.name, 'unassigned')
+        ORDER BY team
+      `)
+    ]);
+
+    const lines = [
+      "# HELP civicfix_issues_total Total number of CivicFix issue reports",
+      "# TYPE civicfix_issues_total gauge",
+      `civicfix_issues_total ${totalIssues.rows[0].count}`,
+      "# HELP civicfix_issues_by_status Number of issue reports by status",
+      "# TYPE civicfix_issues_by_status gauge",
+      ...byStatus.rows.map(
+        (row) => `civicfix_issues_by_status{status="${row.status}"} ${row.count}`
+      ),
+      "# HELP civicfix_issues_by_team Number of issue reports by assigned team",
+      "# TYPE civicfix_issues_by_team gauge",
+      ...byTeam.rows.map(
+        (row) =>
+          `civicfix_issues_by_team{team="${String(row.team).replaceAll('"', '\\"')}"} ${row.count}`
+      )
+    ];
+
+    response.type("text/plain").send(`${lines.join("\n")}\n`);
   } catch (error) {
     next(error);
   }

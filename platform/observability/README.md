@@ -8,3 +8,8 @@ Planned observability stack:
 - Deployment and runtime dashboards
 - Alerting rules for service health
 
+Current application metrics:
+
+- `GET /health`
+- `GET /api/metrics/summary`
+- `GET /metrics`

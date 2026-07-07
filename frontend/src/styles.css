@@ -234,6 +234,64 @@ button:hover {
   font-weight: 800;
 }
 
+.metrics-panel {
+  display: grid;
+  gap: 22px;
+  margin-bottom: 28px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1fr;
+  gap: 16px;
+}
+
+.metric-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.metric-card > span {
+  color: #64748b;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metric-card strong {
+  color: #0f172a;
+}
+
+.primary-metric {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  color: white;
+  background: linear-gradient(135deg, #1d4ed8, #0f172a);
+}
+
+.primary-metric span,
+.primary-metric strong {
+  color: white;
+}
+
+.primary-metric strong {
+  font-size: 3.5rem;
+}
+
+.metric-card ul {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.metric-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .operations-panel {
   display: grid;
   gap: 24px;
@@ -326,6 +384,7 @@ dd {
 
   .grid,
   .two-column,
+  .metrics-grid,
   .operations-grid {
     grid-template-columns: 1fr;
   }
