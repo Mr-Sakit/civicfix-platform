@@ -24,6 +24,7 @@ Current evidence:
 - [Security foundation](evidence/security-foundation.md)
 - [Monitoring foundation](evidence/monitoring-foundation.md)
 - [Alerting foundation](evidence/alerting-foundation.md)
+- [GitOps foundation](evidence/gitops-foundation.md)
 
 Runbooks:
 
@@ -33,3 +34,4 @@ Runbooks:
 - [Security foundation](runbooks/security.md)
 - [Monitoring foundation](runbooks/monitoring.md)
 - [Alerting foundation](runbooks/alerting.md)
+- [GitOps foundation](runbooks/gitops.md)

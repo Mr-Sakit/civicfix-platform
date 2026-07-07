@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: civicfix-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: civicfix-platform
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  description: GitOps project for CivicFix application and operations layers.
+  sourceRepos:
+    - git@github.com:Mr-Sakit/civicfix-platform.git
+    - https://github.com/Mr-Sakit/civicfix-platform.git
+  destinations:
+    - namespace: civicfix
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

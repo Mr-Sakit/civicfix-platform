@@ -24,6 +24,7 @@ Delivered:
 - CodeQL code scanning workflow
 - Prometheus and Grafana monitoring foundation
 - Prometheus alerting rules
+- Argo CD GitOps application definitions
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -68,6 +69,7 @@ In progress:
 - Kubernetes base manifests
 - Namespace, services, deployments, StatefulSet, ConfigMap, and Secret pattern
 - Kubernetes runbook and validation evidence
+- Argo CD app-of-apps GitOps foundation
 
 Planned:
 
@@ -75,7 +77,13 @@ Planned:
 - AKS deployment
 - PostgreSQL cloud database
 - Ingress and TLS
-- GitOps deployment flow
+
+Delivered:
+
+- Argo CD AppProject for CivicFix
+- Argo CD root application for app-of-apps bootstrap
+- Argo CD applications for the CivicFix platform and monitoring stack
+- CI validation for GitOps manifest rendering
 
 ## Stage 5: Observability and operations
 
