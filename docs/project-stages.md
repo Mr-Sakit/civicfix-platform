@@ -8,6 +8,8 @@ Delivered:
 
 - Frontend web app scaffold
 - Backend API scaffold
+- Citizen issue submission UI
+- Recent issue listing UI
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Initial documentation structure

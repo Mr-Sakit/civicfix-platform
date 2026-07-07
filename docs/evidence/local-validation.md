@@ -6,6 +6,8 @@ Date: 2026-07-07
 
 Validate the first CivicFix Platform three-tier application skeleton before moving into deeper feature development and deployment work.
 
+Updated after adding the first citizen reporting workflow.
+
 ## Checks completed
 
 | Check | Result |
