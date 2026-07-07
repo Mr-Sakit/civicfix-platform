@@ -16,6 +16,7 @@ The GitHub Actions workflow now validates:
 - frontend production build
 - backend Docker image build
 - frontend Docker image build
+- Kubernetes Kustomize base render
 
 ## Workflow file
 
@@ -30,6 +31,7 @@ The CI-style checks were also validated locally:
 - `npm run frontend:build` passed.
 - `docker build -t civicfix-backend:ci ./backend` passed.
 - `docker build -t civicfix-frontend:ci ./frontend` passed.
+- `kubectl kustomize deploy/kubernetes/base` passed.
 
 ## Why this matters
 
@@ -37,7 +39,6 @@ This creates a repeatable quality gate before deployment work begins. It proves 
 
 ## Future improvements
 
-- publish images to a container registry
 - add test coverage
 - add security scanning for container images
 - add deployment workflows for staging and production

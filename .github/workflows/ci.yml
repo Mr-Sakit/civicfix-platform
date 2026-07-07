@@ -59,3 +59,17 @@ jobs:
           context: ./frontend
           push: false
           tags: civicfix-frontend:ci
+
+  kubernetes-validation:
+    name: Kubernetes manifest validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Render Kubernetes base
+        run: kubectl kustomize deploy/kubernetes/base

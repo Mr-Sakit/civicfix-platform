@@ -18,6 +18,7 @@ Delivered:
 - Frontend operational metrics panel
 - CI dependency audit
 - CI container image build checks
+- CI Kubernetes manifest validation
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data

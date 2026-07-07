@@ -13,4 +13,5 @@ Planned workflows:
 Current workflow:
 
 - `ci.yml` validates dependency installation, dependency audit, backend checks, frontend build, and Docker image builds.
+- `ci.yml` also validates that the Kubernetes Kustomize base renders successfully.
 - `container-delivery.yml` builds and publishes backend/frontend images to GitHub Container Registry.
