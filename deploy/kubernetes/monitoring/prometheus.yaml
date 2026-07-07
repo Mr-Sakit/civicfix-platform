@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: civicfix-prometheus
+  labels:
+    app.kubernetes.io/name: civicfix-prometheus
+    app.kubernetes.io/part-of: civicfix-platform
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: civicfix-prometheus-config
+  labels:
+    app.kubernetes.io/name: civicfix-prometheus
+    app.kubernetes.io/part-of: civicfix-platform
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: civicfix-backend
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - civicfix-backend:4000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicfix-prometheus
+  labels:
+    app.kubernetes.io/name: civicfix-prometheus
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: civicfix-prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civicfix-prometheus
+  labels:
+    app.kubernetes.io/name: civicfix-prometheus
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: civicfix-prometheus
+        app.kubernetes.io/part-of: civicfix-platform
+    spec:
+      serviceAccountName: civicfix-prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.7.3
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --web.enable-lifecycle
+          ports:
+            - name: http
+              containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: prometheus-data
+              mountPath: /prometheus
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: civicfix-prometheus-config
+        - name: prometheus-data
+          emptyDir: {}
+

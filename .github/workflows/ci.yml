@@ -73,3 +73,6 @@ jobs:
 
       - name: Render Kubernetes base
         run: kubectl kustomize deploy/kubernetes/base
+
+      - name: Render Kubernetes monitoring
+        run: kubectl kustomize deploy/kubernetes/monitoring

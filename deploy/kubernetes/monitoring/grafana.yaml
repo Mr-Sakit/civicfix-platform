@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: civicfix-grafana-secret
+  labels:
+    app.kubernetes.io/name: civicfix-grafana
+    app.kubernetes.io/part-of: civicfix-platform
+type: Opaque
+stringData:
+  GF_SECURITY_ADMIN_USER: "admin"
+  GF_SECURITY_ADMIN_PASSWORD: "replace-with-grafana-admin-password"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicfix-grafana
+  labels:
+    app.kubernetes.io/name: civicfix-grafana
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: civicfix-grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civicfix-grafana
+  labels:
+    app.kubernetes.io/name: civicfix-grafana
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: civicfix-grafana
+        app.kubernetes.io/part-of: civicfix-platform
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:12.3.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: civicfix-grafana-secret
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: grafana-dashboard-providers
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
+              readOnly: true
+      volumes:
+        - name: grafana-datasources
+          configMap:
+            name: civicfix-grafana-datasources
+        - name: grafana-dashboard-providers
+          configMap:
+            name: civicfix-grafana-dashboard-providers
+        - name: grafana-dashboards
+          configMap:
+            name: civicfix-grafana-dashboards
+

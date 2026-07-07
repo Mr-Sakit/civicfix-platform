@@ -29,3 +29,9 @@ Validated with the Docker Compose stack running:
 ## Why this matters
 
 This creates a realistic bridge between application behavior and DevOps monitoring. Later, Prometheus can scrape `/metrics`, and Grafana can visualize report volume, workflow progress, and team assignment distribution.
+
+## Follow-up implementation
+
+The Kubernetes monitoring foundation now adds Prometheus and Grafana manifests that use these metrics. See:
+
+- [Monitoring foundation](monitoring-foundation.md)

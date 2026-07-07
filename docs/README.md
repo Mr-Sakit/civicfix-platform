@@ -22,6 +22,7 @@ Current evidence:
 - [Container delivery foundation](evidence/container-delivery.md)
 - [Kubernetes foundation](evidence/kubernetes-foundation.md)
 - [Security foundation](evidence/security-foundation.md)
+- [Monitoring foundation](evidence/monitoring-foundation.md)
 
 Runbooks:
 
@@ -29,3 +30,4 @@ Runbooks:
 - [Database migrations](runbooks/database-migrations.md)
 - [Kubernetes foundation](runbooks/kubernetes.md)
 - [Security foundation](runbooks/security.md)
+- [Monitoring foundation](runbooks/monitoring.md)

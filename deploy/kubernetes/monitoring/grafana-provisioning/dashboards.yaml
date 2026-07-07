@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: CivicFix dashboards
+    orgId: 1
+    folder: CivicFix
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
+
