@@ -14,6 +14,7 @@ Current Kubernetes foundation:
 - `kubernetes/base` contains the first Kustomize base for CivicFix Platform.
 - It defines the frontend, backend, PostgreSQL, Redis, shared configuration, and namespace resources.
 - It is designed to support later overlays for local Kubernetes, AKS, and GitOps promotion.
+- `kubernetes/monitoring` contains the first Prometheus and Grafana monitoring foundation.
 
 Current delivery image targets:
 
@@ -26,6 +27,12 @@ Render the Kubernetes base:
 
 ```powershell
 kubectl kustomize deploy/kubernetes/base
+```
+
+Render the monitoring foundation:
+
+```powershell
+kubectl kustomize deploy/kubernetes/monitoring
 ```
 
 Apply the Kubernetes base to the active cluster context:

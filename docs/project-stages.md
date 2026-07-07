@@ -22,6 +22,7 @@ Delivered:
 - Dependabot dependency update automation
 - Security workflow with repository and container image scans
 - CodeQL code scanning workflow
+- Prometheus and Grafana monitoring foundation
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -77,10 +78,21 @@ Planned:
 
 ## Stage 5: Observability and operations
 
-Planned:
+In progress:
 
 - Metrics
 - Dashboards
+
+Delivered:
+
+- Backend Prometheus-style `/metrics` endpoint
+- Frontend operational metrics summary
+- Prometheus Kubernetes deployment
+- Grafana Kubernetes deployment
+- CivicFix operations dashboard provisioning
+
+Planned:
+
 - Alerts
 - Runbooks
 - Deployment evidence
