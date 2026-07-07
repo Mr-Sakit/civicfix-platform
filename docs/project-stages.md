@@ -21,6 +21,7 @@ Delivered:
 - CI Kubernetes manifest validation
 - Dependabot dependency update automation
 - Security workflow with repository and container image scans
+- CodeQL code scanning workflow
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -56,6 +57,7 @@ Delivered:
 - Dependabot configuration
 - Trivy repository scan
 - Trivy container image scan
+- CodeQL JavaScript/TypeScript code scanning
 
 ## Stage 4: Cloud and Kubernetes
 
