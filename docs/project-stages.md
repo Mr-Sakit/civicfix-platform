@@ -16,6 +16,8 @@ Delivered:
 - PostgreSQL migration for team assignment
 - Application metrics endpoint
 - Frontend operational metrics panel
+- CI dependency audit
+- CI container image build checks
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Docker Compose runtime validation
