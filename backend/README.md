@@ -12,4 +12,18 @@ Planned responsibilities:
 - Audit logging
 - Database access through PostgreSQL
 
-Planned runtime: Node.js.
+Runtime: Node.js with Express.
+
+## Local commands
+
+```bash
+npm install
+npm run dev
+```
+
+Useful endpoints:
+
+- `GET /health`
+- `GET /api`
+- `GET /api/issues`
+- `GET /api/categories`
