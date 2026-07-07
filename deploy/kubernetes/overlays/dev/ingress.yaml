@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: civicfix-frontend
+  labels:
+    app.kubernetes.io/name: civicfix-frontend
+    app.kubernetes.io/part-of: civicfix-platform
+    civicfix.io/environment: dev
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  tls:
+    - hosts:
+        - civicfix-dev.local
+      secretName: civicfix-dev-frontend-tls
+  rules:
+    - host: civicfix-dev.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: civicfix-frontend
+                port:
+                  name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: civicfix-backend
+  labels:
+    app.kubernetes.io/name: civicfix-backend
+    app.kubernetes.io/part-of: civicfix-platform
+    civicfix.io/environment: dev
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  tls:
+    - hosts:
+        - api.civicfix-dev.local
+      secretName: civicfix-dev-backend-tls
+  rules:
+    - host: api.civicfix-dev.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: civicfix-backend
+                port:
+                  name: http

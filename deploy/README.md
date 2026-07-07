@@ -16,6 +16,7 @@ Current Kubernetes foundation:
 - It is designed to support later overlays for local Kubernetes, AKS, and GitOps promotion.
 - `kubernetes/overlays/dev` contains a lightweight development environment overlay.
 - `kubernetes/overlays/prod` contains a production-oriented environment overlay.
+- The environment overlays include ingress and TLS placeholders for frontend and API access.
 - `kubernetes/monitoring` contains the first Prometheus and Grafana monitoring foundation.
 
 Current GitOps foundation:
@@ -74,3 +75,10 @@ Apply an environment overlay:
 kubectl apply -k deploy/kubernetes/overlays/dev
 kubectl apply -k deploy/kubernetes/overlays/prod
 ```
+
+Current ingress host placeholders:
+
+- Dev frontend: `https://civicfix-dev.local`
+- Dev API: `https://api.civicfix-dev.local`
+- Prod frontend: `https://civicfix.example.com`
+- Prod API: `https://api.civicfix.example.com`

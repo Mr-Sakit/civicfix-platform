@@ -26,6 +26,7 @@ Current evidence:
 - [Alerting foundation](evidence/alerting-foundation.md)
 - [GitOps foundation](evidence/gitops-foundation.md)
 - [Environment overlays](evidence/environment-overlays.md)
+- [Ingress and TLS foundation](evidence/ingress-tls-foundation.md)
 
 Runbooks:
 
@@ -37,3 +38,4 @@ Runbooks:
 - [Alerting foundation](runbooks/alerting.md)
 - [GitOps foundation](runbooks/gitops.md)
 - [Environment overlays](runbooks/environment-overlays.md)
+- [Ingress and TLS](runbooks/ingress-tls.md)
