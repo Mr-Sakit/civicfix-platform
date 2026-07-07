@@ -10,3 +10,9 @@ Planned contents:
 - Ingress configuration
 - Secret references
 
+Current delivery image targets:
+
+- `ghcr.io/mr-sakit/civicfix-backend`
+- `ghcr.io/mr-sakit/civicfix-frontend`
+
+These images are prepared for later Kubernetes and GitOps deployment stages.
