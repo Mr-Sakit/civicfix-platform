@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Scan repository with Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -70,7 +70,7 @@ jobs:
           tags: civicfix-backend:security
 
       - name: Scan backend image with Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: civicfix-backend:security
@@ -87,7 +87,7 @@ jobs:
           tags: civicfix-frontend:security
 
       - name: Scan frontend image with Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: civicfix-frontend:security
