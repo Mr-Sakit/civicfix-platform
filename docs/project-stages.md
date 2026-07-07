@@ -18,6 +18,7 @@ Delivered:
 - Frontend operational metrics panel
 - CI dependency audit
 - CI container image build checks
+- GitHub Container Registry image publishing workflow
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Docker Compose runtime validation
