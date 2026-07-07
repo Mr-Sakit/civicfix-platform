@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civicfix-backend
+  labels:
+    civicfix.io/environment: prod
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        civicfix.io/environment: prod
+    spec:
+      containers:
+        - name: backend
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi

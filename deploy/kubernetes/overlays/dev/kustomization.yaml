@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: civicfix-dev
+
+resources:
+  - ../../base
+
+patches:
+  - path: namespace-patch.yaml
+    target:
+      kind: Namespace
+      name: civicfix
+  - path: configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: civicfix-app-config
+  - path: backend-patch.yaml
+    target:
+      kind: Deployment
+      name: civicfix-backend
+  - path: frontend-patch.yaml
+    target:
+      kind: Deployment
+      name: civicfix-frontend
+  - path: postgres-patch.yaml
+    target:
+      kind: StatefulSet
+      name: civicfix-postgres

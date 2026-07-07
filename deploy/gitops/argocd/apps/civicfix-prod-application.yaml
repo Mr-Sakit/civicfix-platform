@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: civicfix-prod-application
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: civicfix-prod-application
+    app.kubernetes.io/part-of: civicfix-platform
+    civicfix.io/environment: prod
+spec:
+  project: civicfix-platform
+  source:
+    repoURL: git@github.com:Mr-Sakit/civicfix-platform.git
+    targetRevision: main
+    path: deploy/kubernetes/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: civicfix-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

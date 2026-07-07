@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: civicfix-postgres
+  labels:
+    civicfix.io/environment: prod
+spec:
+  template:
+    metadata:
+      labels:
+        civicfix.io/environment: prod
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
