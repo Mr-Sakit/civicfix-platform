@@ -55,5 +55,46 @@ civicfix-platform/
 
 ## Current status
 
-This repository is being prepared as the application foundation for the capstone project. The first milestone is to create a working local three-tier application, then gradually add CI/CD, cloud infrastructure, Kubernetes deployment, monitoring, security, and documentation evidence.
+This repository now contains the initial three-tier application skeleton:
 
+- Frontend web app scaffold
+- Backend API scaffold
+- PostgreSQL schema and seed data
+- Local Docker Compose runtime
+- Documentation structure for capstone evidence
+
+The next milestones are to complete the main CivicFix features, then gradually add CI/CD, cloud infrastructure, Kubernetes deployment, monitoring, security, and documentation evidence.
+
+## Local development
+
+Prerequisites:
+
+- Node.js 22+
+- npm 10+
+- Docker Desktop
+
+Start the full local platform:
+
+```bash
+docker compose up --build
+```
+
+Expected local URLs:
+
+- Frontend: http://localhost:3000
+- Backend health: http://localhost:4000/health
+- Backend API summary: http://localhost:4000/api
+
+Run services manually during development:
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
