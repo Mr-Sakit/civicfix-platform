@@ -23,6 +23,7 @@ Delivered:
 - Security workflow with repository and container image scans
 - CodeQL code scanning workflow
 - Prometheus and Grafana monitoring foundation
+- Prometheus alerting rules
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -90,9 +91,10 @@ Delivered:
 - Prometheus Kubernetes deployment
 - Grafana Kubernetes deployment
 - CivicFix operations dashboard provisioning
+- Prometheus alert rules for backend metrics and issue workflow signals
+- CI validation for Prometheus alert rules
 
 Planned:
 
-- Alerts
 - Runbooks
 - Deployment evidence

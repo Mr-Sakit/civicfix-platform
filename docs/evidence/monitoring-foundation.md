@@ -16,6 +16,7 @@ The monitoring package defines:
 
 - Prometheus Deployment and Service
 - Prometheus scrape configuration for `civicfix-backend:4000/metrics`
+- Prometheus alert rule ConfigMap
 - Grafana Deployment and Service
 - Grafana Prometheus datasource provisioning
 - Grafana dashboard provider provisioning
@@ -43,3 +44,8 @@ This validates that the monitoring manifests and generated ConfigMaps render suc
 
 This is a lightweight monitoring foundation. Later stages can replace it with Helm-managed kube-prometheus-stack, add Alertmanager, and add cluster-level exporters.
 
+## Follow-up implementation
+
+Prometheus alert rules are now included. See:
+
+- [Alerting foundation](alerting-foundation.md)

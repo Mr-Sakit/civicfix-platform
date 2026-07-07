@@ -1,0 +1,43 @@
+groups:
+  - name: civicfix.application
+    rules:
+      - alert: CivicFixBackendMetricsUnavailable
+        expr: up{job="civicfix-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: civicfix-backend
+        annotations:
+          summary: CivicFix backend metrics endpoint is unavailable
+          description: Prometheus cannot scrape the CivicFix backend /metrics endpoint for more than 2 minutes.
+
+      - alert: CivicFixIssueMetricsMissing
+        expr: absent(civicfix_issues_total)
+        for: 5m
+        labels:
+          severity: warning
+          service: civicfix-backend
+        annotations:
+          summary: CivicFix issue metrics are missing
+          description: The civicfix_issues_total metric is absent, which may mean the backend metrics endpoint changed or database-backed metrics are failing.
+
+      - alert: CivicFixUnresolvedIssuesPresent
+        expr: sum(civicfix_issues_by_status{status!="resolved"}) > 0
+        for: 30m
+        labels:
+          severity: info
+          service: civicfix-operations
+        annotations:
+          summary: CivicFix has unresolved issue reports
+          description: At least one CivicFix issue has remained unresolved for more than 30 minutes.
+
+      - alert: CivicFixAssignedBacklogPresent
+        expr: sum(civicfix_issues_by_status{status="assigned"}) > 0
+        for: 1h
+        labels:
+          severity: warning
+          service: civicfix-operations
+        annotations:
+          summary: CivicFix assigned backlog is present
+          description: Assigned CivicFix issue reports have remained open for more than 1 hour.
+
