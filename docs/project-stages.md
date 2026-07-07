@@ -19,6 +19,7 @@ Delivered:
 - CI dependency audit
 - CI container image build checks
 - GitHub Container Registry image publishing workflow
+- Kubernetes Kustomize base
 - PostgreSQL schema and seed data
 - Docker Compose local runtime
 - Docker Compose runtime validation
@@ -47,6 +48,12 @@ Planned:
 - Environment configuration
 
 ## Stage 4: Cloud and Kubernetes
+
+In progress:
+
+- Kubernetes base manifests
+- Namespace, services, deployments, StatefulSet, ConfigMap, and Secret pattern
+- Kubernetes runbook and validation evidence
 
 Planned:
 

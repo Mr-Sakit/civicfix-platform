@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: civicfix
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - postgres.yaml
+  - redis.yaml
+  - backend.yaml
+  - frontend.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    app.kubernetes.io/name: civicfix-postgres-init
+    app.kubernetes.io/part-of: civicfix-platform
+
+configMapGenerator:
+  - name: civicfix-postgres-init
+    files:
+      - 001_schema.sql=postgres-init/001_schema.sql
+      - 002_seed.sql=postgres-init/002_seed.sql
