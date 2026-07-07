@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicfix-redis
+  labels:
+    app.kubernetes.io/name: civicfix-redis
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: civicfix-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civicfix-redis
+  labels:
+    app.kubernetes.io/name: civicfix-redis
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: civicfix-redis
+        app.kubernetes.io/part-of: civicfix-platform
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
