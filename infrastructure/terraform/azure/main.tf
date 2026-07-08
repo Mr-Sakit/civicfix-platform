@@ -87,6 +87,10 @@ resource "azurerm_kubernetes_cluster" "main" {
     node_count     = var.aks_node_count
     vm_size        = var.aks_node_vm_size
     vnet_subnet_id = azurerm_subnet.aks.id
+
+    upgrade_settings {
+      max_surge = "10%"
+    }
   }
 
   identity {
@@ -102,12 +106,11 @@ resource "azurerm_kubernetes_cluster" "main" {
 }
 
 resource "azurerm_federated_identity_credential" "external_secrets" {
-  name                = "fic-${local.name_prefix}-external-secrets"
-  resource_group_name = azurerm_resource_group.main.name
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main.oidc_issuer_url
-  parent_id           = azurerm_user_assigned_identity.external_secrets.id
-  subject             = "system:serviceaccount:external-secrets:external-secrets"
+  name                      = "fic-${local.name_prefix}-external-secrets"
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = azurerm_kubernetes_cluster.main.oidc_issuer_url
+  user_assigned_identity_id = azurerm_user_assigned_identity.external_secrets.id
+  subject                   = "system:serviceaccount:external-secrets:external-secrets"
 }
 
 resource "azurerm_key_vault" "main" {
@@ -135,6 +138,8 @@ resource "azurerm_role_assignment" "external_secrets_key_vault_reader" {
 }
 
 resource "azurerm_postgresql_flexible_server" "main" {
+  count = var.create_managed_postgres ? 1 : 0
+
   name                          = "psql-${local.name_prefix}-${random_string.suffix.result}"
   resource_group_name           = azurerm_resource_group.main.name
   location                      = azurerm_resource_group.main.location
@@ -155,7 +160,8 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
 resource "azurerm_postgresql_flexible_server_database" "app" {
   name      = var.postgres_database_name
-  server_id = azurerm_postgresql_flexible_server.main.id
+  count     = var.create_managed_postgres ? 1 : 0
+  server_id = azurerm_postgresql_flexible_server.main[0].id
   charset   = "UTF8"
   collation = "en_US.utf8"
 }
@@ -172,8 +178,10 @@ resource "azurerm_key_vault_secret" "postgres_password" {
 }
 
 resource "azurerm_key_vault_secret" "database_url" {
+  count = var.create_managed_postgres ? 1 : 0
+
   name         = "civicfix-${var.environment}-database-url"
-  value        = "postgres://${var.postgres_admin_username}:${urlencode(random_password.postgres_admin.result)}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${var.postgres_database_name}?sslmode=require"
+  value        = "postgres://${var.postgres_admin_username}:${urlencode(random_password.postgres_admin.result)}@${azurerm_postgresql_flexible_server.main[0].fqdn}:5432/${var.postgres_database_name}?sslmode=require"
   key_vault_id = azurerm_key_vault.main.id
   tags         = local.common_tags
 

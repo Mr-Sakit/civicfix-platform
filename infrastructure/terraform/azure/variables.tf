@@ -18,7 +18,7 @@ variable "environment" {
 variable "location" {
   description = "Azure region for all regional resources."
   type        = string
-  default     = "westeurope"
+  default     = "swedencentral"
 }
 
 variable "address_space" {
@@ -54,13 +54,19 @@ variable "aks_node_count" {
 variable "aks_node_vm_size" {
   description = "Default AKS node VM size."
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_D2s_v3"
 }
 
 variable "postgres_sku_name" {
   description = "Azure Database for PostgreSQL Flexible Server SKU."
   type        = string
-  default     = "B_Standard_B1ms"
+  default     = "B_Standard_B2s"
+}
+
+variable "create_managed_postgres" {
+  description = "Create Azure Database for PostgreSQL Flexible Server. Disable for constrained Student subscriptions and use an in-cluster/dev database instead."
+  type        = bool
+  default     = false
 }
 
 variable "postgres_storage_mb" {

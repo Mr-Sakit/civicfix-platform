@@ -30,7 +30,7 @@ output "external_secrets_identity_client_id" {
 
 output "postgres_fqdn" {
   description = "Private PostgreSQL Flexible Server FQDN."
-  value       = azurerm_postgresql_flexible_server.main.fqdn
+  value       = var.create_managed_postgres ? azurerm_postgresql_flexible_server.main[0].fqdn : null
 }
 
 output "container_registry_login_server" {
