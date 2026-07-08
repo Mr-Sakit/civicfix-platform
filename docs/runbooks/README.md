@@ -11,3 +11,5 @@ Runbooks will describe common operational tasks, such as:
 Available runbooks:
 
 - [AKS Student demo](aks-student-demo.md)
+- [Monitoring live](monitoring-live.md)
+- [Argo CD live](argocd-live.md)
