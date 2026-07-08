@@ -16,6 +16,15 @@ From the repository root:
 terraform fmt -check -recursive infrastructure/terraform/azure
 ```
 
+## Validate Terraform configuration safely
+
+Before remote state is active, initialize providers without configuring a backend:
+
+```powershell
+terraform -chdir=infrastructure/terraform/azure init -backend=false
+terraform -chdir=infrastructure/terraform/azure validate
+```
+
 ## Prepare variables
 
 Copy the example file:
