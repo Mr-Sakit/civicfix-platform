@@ -2,6 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  - civicfix-student-application.yaml
+  - civicfix-student-monitoring.yaml
   - civicfix-dev-application.yaml
   - civicfix-prod-application.yaml
   - civicfix-monitoring.yaml
