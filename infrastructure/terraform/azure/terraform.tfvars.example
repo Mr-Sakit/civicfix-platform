@@ -1,13 +1,17 @@
 project_name = "civicfix"
 environment  = "dev"
-location     = "westeurope"
+location     = "swedencentral"
 
 aks_node_count   = 1
-aks_node_vm_size = "Standard_B2s"
+aks_node_vm_size = "Standard_D2s_v3"
 
-postgres_sku_name   = "B_Standard_B1ms"
+postgres_sku_name   = "B_Standard_B2s"
 postgres_storage_mb = 32768
 postgres_version    = "16"
+
+# Student subscriptions can hit Azure PostgreSQL capacity restrictions.
+# Keep false for a low-friction Student AKS foundation; set true in the main capstone subscription.
+create_managed_postgres = false
 
 # CivicFix currently publishes images to GitHub Container Registry.
 # Set this to true later if the project decides to use Azure Container Registry.

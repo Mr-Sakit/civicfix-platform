@@ -4,7 +4,9 @@ This folder contains the planned Azure infrastructure foundation for CivicFix Pl
 
 It is intentionally prepared as a skeleton for the future Azure/AKS stage. Do not apply it until the team has confirmed the Azure subscription, naming, region, and cost expectations.
 
-The default development settings are intentionally budget-conscious for the Student subscription path: one small AKS node, a burstable PostgreSQL SKU, and no Azure Container Registry by default.
+The default development settings are intentionally budget-conscious for the Student subscription path: one small AKS node, optional managed PostgreSQL, and no Azure Container Registry by default.
+
+Managed PostgreSQL is controlled by `create_managed_postgres`. It is disabled by default because Student subscriptions can hit regional PostgreSQL capacity restrictions. Enable it in the main capstone subscription when capacity is available.
 
 ## Planned resources
 
