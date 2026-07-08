@@ -32,6 +32,16 @@ Azure Container Registry is therefore optional in this Terraform foundation and 
 terraform fmt -check -recursive infrastructure/terraform/azure
 ```
 
+## Remote state
+
+Remote state is not active yet.
+
+Before a real team deployment, create an Azure Storage backend and enable the backend configuration documented in:
+
+- `backend/README.md`
+- `backend/backend.tf.example`
+- `backend/backend.config.example`
+
 ## Future deployment flow
 
 ```powershell
