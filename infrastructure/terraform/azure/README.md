@@ -4,6 +4,8 @@ This folder contains the planned Azure infrastructure foundation for CivicFix Pl
 
 It is intentionally prepared as a skeleton for the future Azure/AKS stage. Do not apply it until the team has confirmed the Azure subscription, naming, region, and cost expectations.
 
+The default development settings are intentionally budget-conscious for the Student subscription path: one small AKS node, a burstable PostgreSQL SKU, and no Azure Container Registry by default.
+
 ## Planned resources
 
 - Azure Resource Group

@@ -2,7 +2,7 @@ project_name = "civicfix"
 environment  = "dev"
 location     = "westeurope"
 
-aks_node_count   = 2
+aks_node_count   = 1
 aks_node_vm_size = "Standard_B2s"
 
 postgres_sku_name   = "B_Standard_B1ms"
