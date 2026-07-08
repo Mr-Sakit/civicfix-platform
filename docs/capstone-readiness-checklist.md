@@ -83,6 +83,7 @@ Use this checklist to track what is ready before final presentation.
 - [x] Terraform variables and outputs
 - [x] Terraform provider lock file
 - [x] Terraform local validation
+- [x] Terraform plan readiness
 - [x] Remote state backend examples
 - [ ] Azure Storage remote state created
 - [ ] Terraform plan captured

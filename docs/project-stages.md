@@ -31,6 +31,7 @@ Delivered:
 - Azure Terraform infrastructure skeleton
 - Terraform remote state backend examples
 - Terraform local validation with provider lock file
+- Terraform plan readiness evidence
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -91,6 +92,7 @@ Delivered:
 - Azure Terraform skeleton for resource group, networking, AKS, PostgreSQL, Key Vault, workload identity, and optional ACR
 - Azure Storage remote-state backend examples for future team Terraform use
 - Local Terraform initialization and validation evidence
+- Read-only Terraform plan evidence for Azure dev infrastructure
 - Argo CD AppProject for CivicFix
 - Argo CD root application for app-of-apps bootstrap
 - Argo CD applications for CivicFix dev, CivicFix prod, and monitoring

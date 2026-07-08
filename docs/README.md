@@ -35,6 +35,7 @@ Current evidence:
 - [Secret-management foundation](evidence/secret-management-foundation.md)
 - [Terraform foundation](evidence/terraform-foundation.md)
 - [Terraform local validation](evidence/terraform-local-validation.md)
+- [Terraform plan readiness](evidence/terraform-plan-readiness.md)
 
 Decision records:
 
