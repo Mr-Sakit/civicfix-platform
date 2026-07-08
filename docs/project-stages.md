@@ -27,6 +27,7 @@ Delivered:
 - Argo CD GitOps application definitions
 - Kubernetes dev and prod overlays
 - Ingress and TLS placeholder manifests
+- Azure Key Vault-ready External Secrets manifests
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -74,6 +75,7 @@ In progress:
 - Argo CD app-of-apps GitOps foundation
 - Environment overlays for development and production
 - Ingress routing and TLS placeholder configuration
+- External Secrets Operator-ready secret-management structure
 
 Planned:
 
@@ -89,8 +91,10 @@ Delivered:
 - Argo CD applications for CivicFix dev, CivicFix prod, and monitoring
 - Kubernetes Kustomize overlays for dev and prod
 - Frontend and backend ingress manifests for dev and prod
+- Azure Key Vault `ClusterSecretStore` and `ExternalSecret` examples
 - CI validation for GitOps manifest rendering
 - CI validation for environment overlay rendering
+- CI validation for secret-management manifest rendering
 
 ## Stage 5: Observability and operations
 

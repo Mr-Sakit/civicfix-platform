@@ -27,6 +27,7 @@ Current evidence:
 - [GitOps foundation](evidence/gitops-foundation.md)
 - [Environment overlays](evidence/environment-overlays.md)
 - [Ingress and TLS foundation](evidence/ingress-tls-foundation.md)
+- [Secret-management foundation](evidence/secret-management-foundation.md)
 
 Runbooks:
 
@@ -39,3 +40,4 @@ Runbooks:
 - [GitOps foundation](runbooks/gitops.md)
 - [Environment overlays](runbooks/environment-overlays.md)
 - [Ingress and TLS](runbooks/ingress-tls.md)
+- [Secret management](runbooks/secret-management.md)
