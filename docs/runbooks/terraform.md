@@ -28,6 +28,24 @@ Edit `terraform.tfvars` for the selected Azure environment.
 
 Do not commit `terraform.tfvars`.
 
+## Prepare remote state before team deployment
+
+Before a shared Azure deployment, create a remote backend in Azure Storage.
+
+Recommended backend resources:
+
+- resource group: `rg-civicfix-tfstate`
+- storage account: globally unique name such as `stcivicfixtfstate<suffix>`
+- blob container: `tfstate`
+- state key: `civicfix-platform/dev/terraform.tfstate`
+
+Backend examples are stored in:
+
+- `infrastructure/terraform/azure/backend/backend.tf.example`
+- `infrastructure/terraform/azure/backend/backend.config.example`
+
+Do not use local Terraform state for real team deployment.
+
 ## Future deployment flow
 
 ```powershell
@@ -35,6 +53,12 @@ cd infrastructure/terraform/azure
 terraform init
 terraform plan -var-file="terraform.tfvars"
 terraform apply -var-file="terraform.tfvars"
+```
+
+After remote state is enabled, initialize with:
+
+```powershell
+terraform init -backend-config="backend/backend.config"
 ```
 
 ## After deployment

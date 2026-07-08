@@ -52,5 +52,5 @@ This is not deployed yet. Before deployment, the team should confirm:
 - Azure region
 - resource naming
 - expected cost
-- Terraform remote state backend
+- Terraform remote state backend examples
 - whether to continue using GHCR or enable Azure Container Registry

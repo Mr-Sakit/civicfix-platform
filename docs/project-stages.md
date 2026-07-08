@@ -29,6 +29,7 @@ Delivered:
 - Ingress and TLS placeholder manifests
 - Azure Key Vault-ready External Secrets manifests
 - Azure Terraform infrastructure skeleton
+- Terraform remote state backend examples
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -87,6 +88,7 @@ Planned:
 Delivered:
 
 - Azure Terraform skeleton for resource group, networking, AKS, PostgreSQL, Key Vault, workload identity, and optional ACR
+- Azure Storage remote-state backend examples for future team Terraform use
 - Argo CD AppProject for CivicFix
 - Argo CD root application for app-of-apps bootstrap
 - Argo CD applications for CivicFix dev, CivicFix prod, and monitoring
