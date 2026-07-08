@@ -94,3 +94,17 @@ jobs:
 
       - name: Validate Prometheus alert rules
         run: docker run --rm --entrypoint promtool -v "$PWD:/workspace" prom/prometheus:v3.7.3 check rules /workspace/deploy/kubernetes/monitoring/prometheus-rules/civicfix-alerts.yaml
+
+  infrastructure-validation:
+    name: Infrastructure validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive infrastructure/terraform/azure

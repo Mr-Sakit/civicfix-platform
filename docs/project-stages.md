@@ -28,6 +28,7 @@ Delivered:
 - Kubernetes dev and prod overlays
 - Ingress and TLS placeholder manifests
 - Azure Key Vault-ready External Secrets manifests
+- Azure Terraform infrastructure skeleton
 - GitHub Container Registry image publishing workflow
 - Kubernetes Kustomize base
 - PostgreSQL schema and seed data
@@ -79,19 +80,20 @@ In progress:
 
 Planned:
 
-- Azure infrastructure
 - AKS deployment
 - PostgreSQL cloud database
 - Ingress and TLS
 
 Delivered:
 
+- Azure Terraform skeleton for resource group, networking, AKS, PostgreSQL, Key Vault, workload identity, and optional ACR
 - Argo CD AppProject for CivicFix
 - Argo CD root application for app-of-apps bootstrap
 - Argo CD applications for CivicFix dev, CivicFix prod, and monitoring
 - Kubernetes Kustomize overlays for dev and prod
 - Frontend and backend ingress manifests for dev and prod
 - Azure Key Vault `ClusterSecretStore` and `ExternalSecret` examples
+- CI Terraform formatting validation
 - CI validation for GitOps manifest rendering
 - CI validation for environment overlay rendering
 - CI validation for secret-management manifest rendering

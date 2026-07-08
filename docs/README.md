@@ -28,6 +28,7 @@ Current evidence:
 - [Environment overlays](evidence/environment-overlays.md)
 - [Ingress and TLS foundation](evidence/ingress-tls-foundation.md)
 - [Secret-management foundation](evidence/secret-management-foundation.md)
+- [Terraform foundation](evidence/terraform-foundation.md)
 
 Runbooks:
 
@@ -41,3 +42,4 @@ Runbooks:
 - [Environment overlays](runbooks/environment-overlays.md)
 - [Ingress and TLS](runbooks/ingress-tls.md)
 - [Secret management](runbooks/secret-management.md)
+- [Terraform foundation](runbooks/terraform.md)
