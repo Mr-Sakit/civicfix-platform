@@ -44,6 +44,13 @@ CI validates Terraform formatting with:
 terraform fmt -check -recursive infrastructure/terraform/azure
 ```
 
+Local validation was also completed with:
+
+```powershell
+terraform -chdir=infrastructure/terraform/azure init -backend=false
+terraform -chdir=infrastructure/terraform/azure validate
+```
+
 ## Notes
 
 This is not deployed yet. Before deployment, the team should confirm:

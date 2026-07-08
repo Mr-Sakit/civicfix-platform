@@ -14,6 +14,10 @@ Planned sections:
 - Deployment evidence
 - Monitoring evidence
 
+Project tracking:
+
+- [Capstone readiness checklist](capstone-readiness-checklist.md)
+
 Current evidence:
 
 - [Local validation](evidence/local-validation.md)
@@ -30,6 +34,7 @@ Current evidence:
 - [Ingress and TLS foundation](evidence/ingress-tls-foundation.md)
 - [Secret-management foundation](evidence/secret-management-foundation.md)
 - [Terraform foundation](evidence/terraform-foundation.md)
+- [Terraform local validation](evidence/terraform-local-validation.md)
 
 Decision records:
 
@@ -52,3 +57,4 @@ Runbooks:
 - [Ingress and TLS](runbooks/ingress-tls.md)
 - [Secret management](runbooks/secret-management.md)
 - [Terraform foundation](runbooks/terraform.md)
+- [Azure deployment prerequisites](runbooks/azure-deployment-prerequisites.md)
