@@ -7,6 +7,7 @@ Planned sections:
 - Architecture
 - Project stages
 - Decisions
+- RFCs
 - Runbooks
 - Security notes
 - Testing evidence
@@ -29,6 +30,14 @@ Current evidence:
 - [Ingress and TLS foundation](evidence/ingress-tls-foundation.md)
 - [Secret-management foundation](evidence/secret-management-foundation.md)
 - [Terraform foundation](evidence/terraform-foundation.md)
+
+Decision records:
+
+- [Architecture Decision Records](decisions/README.md)
+
+Proposal records:
+
+- [RFCs](rfcs/README.md)
 
 Runbooks:
 

@@ -1,0 +1,22 @@
+# Architecture Decision Records
+
+This folder records important technical decisions for CivicFix Platform.
+
+ADRs help the team explain not only what was built, but why certain tools, patterns, and tradeoffs were chosen.
+
+## Accepted decisions
+
+- [ADR-0001: Use a three-tier architecture with PostgreSQL](ADR-0001-three-tier-postgresql.md)
+- [ADR-0002: Use GitHub Actions for CI/CD automation](ADR-0002-github-actions-ci-cd.md)
+- [ADR-0003: Use GitHub Container Registry for initial image publishing](ADR-0003-github-container-registry.md)
+- [ADR-0004: Use Kubernetes with Kustomize for deployment manifests](ADR-0004-kubernetes-kustomize.md)
+- [ADR-0005: Use Argo CD for GitOps delivery](ADR-0005-argo-cd-gitops.md)
+- [ADR-0006: Use Prometheus and Grafana for observability](ADR-0006-prometheus-grafana-observability.md)
+- [ADR-0007: Prepare Azure Key Vault integration through External Secrets Operator](ADR-0007-azure-key-vault-external-secrets.md)
+- [ADR-0008: Use Terraform for Azure infrastructure as code](ADR-0008-terraform-azure-infrastructure.md)
+
+## Status values
+
+- Proposed: still under discussion
+- Accepted: approved and currently followed
+- Superseded: replaced by a later decision
