@@ -46,9 +46,9 @@ variable "aks_kubernetes_version" {
 }
 
 variable "aks_node_count" {
-  description = "Default AKS node count."
+  description = "Default AKS node count. Keep dev/student deployments small; increase for production resilience."
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "aks_node_vm_size" {
