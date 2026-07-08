@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: civicfix-postgres
+  labels:
+    civicfix.io/environment: student
+spec:
+  template:
+    metadata:
+      labels:
+        civicfix.io/environment: student
+    spec:
+      containers:
+        - name: postgres
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 384Mi

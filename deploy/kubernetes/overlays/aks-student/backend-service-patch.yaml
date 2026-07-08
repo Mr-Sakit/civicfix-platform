@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicfix-backend
+  labels:
+    civicfix.io/environment: student
+spec:
+  type: LoadBalancer

@@ -8,3 +8,6 @@ Runbooks will describe common operational tasks, such as:
 - Rolling back a release
 - Responding to service alerts
 
+Available runbooks:
+
+- [AKS Student demo](aks-student-demo.md)
