@@ -18,6 +18,7 @@ Current Kubernetes foundation:
 - `kubernetes/overlays/prod` contains a production-oriented environment overlay.
 - The environment overlays include ingress and TLS placeholders for frontend and API access.
 - `kubernetes/monitoring` contains the first Prometheus and Grafana monitoring foundation.
+- `kubernetes/secrets/external-secrets/azure-key-vault` contains optional Azure Key Vault integration manifests for a future AKS deployment.
 
 Current GitOps foundation:
 
@@ -61,6 +62,12 @@ Render the GitOps applications:
 
 ```powershell
 kubectl kustomize deploy/gitops/argocd/apps
+```
+
+Render the optional Azure Key Vault secret-management manifests:
+
+```powershell
+kubectl kustomize deploy/kubernetes/secrets/external-secrets/azure-key-vault
 ```
 
 Apply the Kubernetes base to the active cluster context:

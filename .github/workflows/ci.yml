@@ -83,6 +83,9 @@ jobs:
       - name: Render Kubernetes monitoring
         run: kubectl kustomize deploy/kubernetes/monitoring
 
+      - name: Render External Secrets Azure Key Vault manifests
+        run: kubectl kustomize deploy/kubernetes/secrets/external-secrets/azure-key-vault
+
       - name: Render Argo CD GitOps bootstrap
         run: kubectl kustomize deploy/gitops/argocd/bootstrap
 
