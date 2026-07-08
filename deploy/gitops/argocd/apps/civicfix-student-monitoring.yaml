@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: civicfix-student-monitoring
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: civicfix-student-monitoring
+    app.kubernetes.io/part-of: civicfix-platform
+    civicfix.io/environment: student
+spec:
+  project: civicfix-platform
+  source:
+    repoURL: https://github.com/Mr-Sakit/civicfix-platform.git
+    targetRevision: main
+    path: deploy/kubernetes/overlays/monitoring-aks-student
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: civicfix-monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

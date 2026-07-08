@@ -12,6 +12,10 @@ spec:
     - git@github.com:Mr-Sakit/civicfix-platform.git
     - https://github.com/Mr-Sakit/civicfix-platform.git
   destinations:
+    - namespace: civicfix-student
+      server: https://kubernetes.default.svc
+    - namespace: civicfix-monitoring
+      server: https://kubernetes.default.svc
     - namespace: civicfix-dev
       server: https://kubernetes.default.svc
     - namespace: civicfix-prod
