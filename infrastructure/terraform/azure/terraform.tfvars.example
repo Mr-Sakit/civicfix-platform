@@ -1,0 +1,18 @@
+project_name = "civicfix"
+environment  = "dev"
+location     = "westeurope"
+
+aks_node_count   = 2
+aks_node_vm_size = "Standard_B2s"
+
+postgres_sku_name   = "B_Standard_B1ms"
+postgres_storage_mb = 32768
+postgres_version    = "16"
+
+# CivicFix currently publishes images to GitHub Container Registry.
+# Set this to true later if the project decides to use Azure Container Registry.
+create_container_registry = false
+
+tags = {
+  owner = "cubic-cloud"
+}
