@@ -36,6 +36,14 @@ spec:
         - name: backend
           image: ghcr.io/mr-sakit/civicfix-backend:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
               containerPort: 4000
@@ -79,4 +87,3 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-

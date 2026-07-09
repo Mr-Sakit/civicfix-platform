@@ -14,6 +14,14 @@ spec:
       containers:
         - name: backend
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 200m
