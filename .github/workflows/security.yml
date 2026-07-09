@@ -45,11 +45,11 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,misconfig
+          scanners: vuln,misconfig,secret
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           format: table
-          exit-code: "0"
+          exit-code: "1"
 
   container-image-scan:
     name: Container image vulnerability scan

@@ -13,8 +13,9 @@ Security foundation now includes:
 - Dependabot configuration for npm dependencies, GitHub Actions, and Docker base images
 - GitHub Actions security workflow
 - GitHub CodeQL code scanning workflow
+- Dedicated Gitleaks secret scanning workflow
 - Pull request dependency review
-- Trivy repository vulnerability and misconfiguration scanning
+- Trivy repository vulnerability, misconfiguration, and secret scanning
 - Trivy backend container image scanning
 - Trivy frontend container image scanning
 - Placeholder-based Kubernetes Secret pattern
@@ -25,6 +26,8 @@ Security foundation now includes:
 - `.github/dependabot.yml`
 - `.github/workflows/security.yml`
 - `.github/workflows/codeql.yml`
+- `.github/workflows/secret-scanning.yml`
+- `.gitleaks.toml`
 
 ## Security workflow trigger
 
@@ -35,11 +38,13 @@ The security workflow runs on:
 - weekly schedule
 - manual `workflow_dispatch`
 
+The secret scanning workflow runs on the same event types and checks the repository with full Git history enabled.
+
 ## Why this matters
 
-This adds automated security visibility before cloud deployment. It helps catch vulnerable dependencies, unsafe infrastructure configuration, and high/critical container image vulnerabilities early in the delivery process.
+This adds automated security visibility before cloud deployment. It helps catch vulnerable dependencies, unsafe infrastructure configuration, high/critical container image vulnerabilities, and committed secrets early in the delivery process.
 
-The first Trivy stage is configured as reporting-only so the team can review the initial baseline without breaking `main` immediately. Once baseline findings are understood, the workflow can be tightened by changing Trivy `exit-code` values from `0` to `1`.
+The Trivy repository stage now includes secret scanning and fails on high/critical repository findings. Gitleaks adds a second dedicated control for secret detection, including Git history scanning and CivicFix-specific Kubernetes secret rules.
 
 CodeQL uploads analysis results to GitHub Code Scanning. After the first successful CodeQL run, the repository security page should show code scanning results instead of the “Code scanning is not enabled” message.
 
