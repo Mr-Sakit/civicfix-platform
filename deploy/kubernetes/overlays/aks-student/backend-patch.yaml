@@ -18,6 +18,7 @@ spec:
     spec:
       containers:
         - name: backend
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
