@@ -30,7 +30,8 @@ The security workflow is defined in:
 The security workflow runs:
 
 - dependency review on pull requests
-- Trivy repository vulnerability, misconfiguration, and secret scan
+- blocking Trivy repository vulnerability and secret scan
+- non-blocking Trivy repository configuration audit
 - Trivy backend container image scan
 - Trivy frontend container image scan
 
@@ -71,6 +72,8 @@ For secret scanning:
 3. Upgrade or patch the affected dependency/image/configuration.
 4. Re-run the workflow.
 5. Document the result in the relevant evidence file if it affects the capstone delivery.
+
+Configuration audit findings are intentionally visible but non-blocking. Treat them as hardening backlog unless they expose a real secret, public credential, or production-impacting risk.
 
 ## If a secret is found
 

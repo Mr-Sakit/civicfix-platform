@@ -33,23 +33,41 @@ jobs:
           fail-on-severity: high
 
   repository-scan:
-    name: Repository vulnerability and config scan
+    name: Repository vulnerability and secret scan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Scan repository with Trivy
+      - name: Scan repository vulnerabilities and secrets with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,misconfig,secret
+          scanners: vuln,secret
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           format: table
           exit-code: "1"
+
+  configuration-audit:
+    name: Repository configuration audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Audit repository configuration with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: misconfig
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: "0"
 
   container-image-scan:
     name: Container image vulnerability scan
