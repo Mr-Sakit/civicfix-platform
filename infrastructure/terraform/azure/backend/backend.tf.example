@@ -1,8 +1,10 @@
 terraform {
   backend "azurerm" {
-    resource_group_name  = "rg-civicfix-tfstate"
-    storage_account_name = "stcivicfixtfstate"
-    container_name       = "tfstate"
-    key                  = "civicfix-platform/dev/terraform.tfstate"
+    # Copy this file to backend.tf and replace every placeholder.
+    # Do not commit backend.tf.
+    resource_group_name  = "<tfstate-resource-group>"
+    storage_account_name = "<tfstate-storage-account>"
+    container_name       = "<tfstate-container>"
+    key                  = "<environment>/terraform.tfstate"
   }
 }
