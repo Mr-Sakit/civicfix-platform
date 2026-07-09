@@ -220,7 +220,6 @@ Useful starting points:
 - [ADRs](docs/decisions/README.md)
 - [Runbooks](docs/runbooks/README.md)
 - [Evidence docs](docs/evidence/)
-- [Presentation keynote speech](docs/presentation-keynote-speech.md)
 
 ## Known demo tradeoffs
 
