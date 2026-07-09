@@ -39,6 +39,7 @@ The secret scanning workflow runs:
 - Gitleaks repository scan
 - Gitleaks Git history scan
 - custom CivicFix rules for Kubernetes password-like values, including Grafana admin passwords
+- custom Git history guard for Grafana admin passwords that reports redacted findings only
 
 The CodeQL workflow runs:
 
