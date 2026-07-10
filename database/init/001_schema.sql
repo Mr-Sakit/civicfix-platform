@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name VARCHAR(120) NOT NULL,
   email VARCHAR(160) UNIQUE NOT NULL,
   role_id INTEGER NOT NULL REFERENCES roles(id),
+  password_hash TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS civic_issues (
   address TEXT,
   latitude NUMERIC(9, 6),
   longitude NUMERIC(9, 6),
+  image_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

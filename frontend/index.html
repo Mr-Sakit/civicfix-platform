@@ -1,9 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CivicFix Platform</title>
+    <meta
+      name="description"
+      content="CivicFix Platform — a three-tier community issue reporting and resolution system. Report local civic problems and track them to resolution."
+    />
+    <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#eef4ff" media="(prefers-color-scheme: light)" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>CivicFix Platform — Community Issue Reporting</title>
+    <script>
+      // Set theme before paint to avoid flash.
+      (function () {
+        try {
+          var stored = localStorage.getItem("civicfix-theme");
+          var theme =
+            stored ||
+            (window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          /* localStorage unavailable; default light. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
