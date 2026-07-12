@@ -30,7 +30,6 @@ Security foundation now includes:
 - `.github/workflows/codeql.yml`
 - `.github/workflows/secret-scanning.yml`
 - `.gitleaks.toml`
-- `scripts/security/scan-git-history-secrets.sh`
 
 ## Security workflow trigger
 
@@ -47,7 +46,7 @@ The secret scanning workflow runs on the same event types and checks the reposit
 
 This adds automated security visibility before cloud deployment. It helps catch vulnerable dependencies, unsafe infrastructure configuration, high/critical container image vulnerabilities, and committed secrets early in the delivery process.
 
-The Trivy repository stage blocks on high/critical vulnerabilities and secrets. Misconfiguration scanning remains enabled as a visible audit stage, but it is non-blocking because some findings reflect deliberate Student-subscription and demo-runtime tradeoffs. Gitleaks adds a second dedicated control for secret detection, including Git history scanning and CivicFix-specific Kubernetes secret rules. A small custom history guard also checks every commit for Grafana admin password assignments and reports only redacted findings.
+The Trivy repository stage blocks on high/critical vulnerabilities and secrets. Misconfiguration scanning remains enabled as a visible audit stage, but it is non-blocking because some findings reflect deliberate Student-subscription and demo-runtime tradeoffs. Gitleaks adds a second dedicated control for secret detection, including Git history scanning and CivicFix-specific Kubernetes secret rules.
 
 CodeQL uploads analysis results to GitHub Code Scanning. After the first successful CodeQL run, the repository security page should show code scanning results instead of the “Code scanning is not enabled” message.
 
