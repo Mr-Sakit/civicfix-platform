@@ -42,7 +42,6 @@ Expected local URLs:
 
 ## Important notes
 
-- The included Secret uses development/demo values and must be replaced for shared or production environments.
+- Create `civicfix-app-secret` before applying workloads. The repository includes `secret.example.yaml` as a template only.
 - If GitHub Container Registry packages are private, the cluster needs an image pull secret.
 - For AKS, the PostgreSQL StatefulSet may later be replaced with Azure Database for PostgreSQL.
-

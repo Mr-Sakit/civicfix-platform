@@ -6,7 +6,6 @@ namespace: civicfix
 resources:
   - namespace.yaml
   - configmap.yaml
-  - secret.yaml
   - postgres.yaml
   - redis.yaml
   - backend.yaml
