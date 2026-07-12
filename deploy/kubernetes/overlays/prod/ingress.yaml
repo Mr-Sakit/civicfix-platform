@@ -7,9 +7,10 @@ metadata:
     app.kubernetes.io/part-of: civicfix-platform
     civicfix.io/environment: prod
   annotations:
-    kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
         - civicfix.example.com
@@ -35,9 +36,10 @@ metadata:
     app.kubernetes.io/part-of: civicfix-platform
     civicfix.io/environment: prod
   annotations:
-    kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
         - api.civicfix.example.com
