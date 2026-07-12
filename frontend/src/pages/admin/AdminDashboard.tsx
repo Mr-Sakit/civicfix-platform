@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../../components/StatusBadge';
+import { MapContainer } from '../../components/MapContainer';
 
 export const AdminDashboard: React.FC = () => {
   const { reports, selectedReportId, setSelectedReportId, updateReport } = useApp();
@@ -279,16 +280,7 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-[11px] font-bold text-on-surface-variant uppercase mb-md">Location Details</h3>
                   <div className="rounded-xl overflow-hidden border border-outline-variant/30 h-40 bg-surface-dim relative">
-                    <img
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLD9h1-dyAGaebWrFrIn8YkjBdkRedtwfbWF04AF8Myj0fGmWex2b-s5-r0vGdnuLAz1ZHO0K-vazKojeTejY6cYQelhSFQK_mHEuN5iVwrKlt4OLJQkFQUbHvRQi_lffiRvGMyBNbhs9tQ6kn9CBwPfbJt1q96oDb2-HmdAu19V9VVSiAYWd7fb7LEd0YW2sFc5blCon8sMESrcx1pPxSySX8h-ASni8qIE17peRZ4aPP6kDRBMzn91WfiANPcQPL5GUx-QQ2KHA"
-                      className="w-full h-full object-cover"
-                      alt="Mini map loc"
-                    />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary">
-                      <span className="material-symbols-outlined text-[32px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        location_on
-                      </span>
-                    </div>
+                    <MapContainer selectedId={selectedReport.id} interactive={false} />
                   </div>
                   <div className="mt-md space-y-sm text-xs">
                     <div className="flex justify-between items-center">
