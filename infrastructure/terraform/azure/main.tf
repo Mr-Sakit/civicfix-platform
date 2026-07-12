@@ -13,7 +13,7 @@ resource "random_password" "postgres_admin" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "rg-${local.name_prefix}-${random_string.suffix.result}"
+  name     = "rg-${local.name_prefix}"
   location = var.location
   tags     = local.common_tags
 }

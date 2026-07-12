@@ -14,7 +14,20 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
   const { reports, setSelectedReportId } = useApp();
   const [zoom, setZoom] = useState(1);
-  const [mapType, setMapType] = useState<'street' | 'satellite' | 'terrain'>('street');
+  const [mapType, setMapType] = useState<'standard' | 'transport' | 'cycle'>('standard');
+
+  const selectedReport = reports.find((report) => report.id === selectedId) ?? reports[0];
+  const centerLat = selectedReport?.lat ?? 40.7128;
+  const centerLng = selectedReport?.lng ?? -74.0060;
+  const span = 0.08 / zoom;
+  const bbox = [
+    centerLng - span,
+    centerLat - span,
+    centerLng + span,
+    centerLat + span,
+  ].join('%2C');
+  const mapLayer = mapType === 'cycle' ? 'C' : mapType === 'transport' ? 'T' : 'M';
+  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=${mapLayer}&marker=${centerLat}%2C${centerLng}`;
 
   // Coordinates mock to CSS percentages on the static map image
   const getPinPosition = (report: Report) => {
@@ -61,24 +74,16 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     }
   };
 
-  // Maps depending on Map Type
-  const mapImages = {
-    street: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOOUA9P8pe4BYhXihlD-l_k4417brZYksmrwnuNq6kds_lECcxJfuxu9Y4Ych2hHJP5GVBl_rIdea4yKNIoChAaslC40y5pVQXE4YjRAfYBGdg38ke47z0Vx6rVI-Q4UP5bIxJ5MtAw35juEQ8V89BHmwcjZ-6gGEMmShXr37EG_M1vJ11sAqXRzFCdhLMsd_fxG6U9JsJ1H6K1WQbq69frLQYrwd41tFIQwqpK2A88aOoqi07n2YOnOfCSpc_gf9kLTZwQ7EUpQc',
-    satellite: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBgCc9BjPTpMBT0UzG7fcfAEiOEL_qXj8yi6CrOd8WnGrDpENM9IR_xBmDkxQA6TClCREViwOqD7IiSWmRomlil9VoJQuuk4cLiefMvACBrIwABkux0UkdZY10ulQBXE9HHT5z_2QaUdLsWh9znOeQNcUdeoj_hhiMXXQtqilkp1E1ga-R2aYTo14OnjFU0gcynPCSa3CenKkH44HcUxDbyfGvomh6ptmpDJC8cdFikOIcH3K8L4qZl3OugYOpyLiG_Q5OizBdzdrE',
-    terrain: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIY4fdBSixnIb601QbxJ29MDFwoykrMKKpHqfujbG6kC3hjDu-BUdhJJ9ebKaAJBWUIV_ttxe7sdkmzYhjtmII24nreXlKF3nWcMAFBhf3EmQdqYLNinckYEMeVcyCiEzcrYDx91GwbvQg-uaw_JCswzvK92hA5vs_wa-48gY__nHBkok9Fd-3jw4n8lkaVvapak62VZL5I4-8LLuAKzPhJr1a2obXf0qDg_X9SOEWZ6YJ9wRvhEHNDzFKyusRIzy1Dfe_ByDhb6c'
-  };
-
   return (
     <div className="w-full h-full relative bg-surface-container overflow-hidden group">
-      {/* Map simulation base */}
-      <img
-        style={{
-          transform: `scale(${zoom})`,
-          transition: 'transform 0.3s ease-in-out',
-        }}
-        className="w-full h-full object-cover select-none"
-        alt="Stylized interactive neighborhood map"
-        src={mapImages[mapType]}
+      {/* Real OpenStreetMap base layer */}
+      <iframe
+        key={mapUrl}
+        title="CivicFix live neighborhood map"
+        src={mapUrl}
+        className="w-full h-full border-0 select-none"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
       />
 
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/5 to-transparent z-10"></div>
@@ -145,28 +150,28 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       <div className="absolute top-lg left-lg z-30">
         <div className="bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-outline-variant/30 flex gap-xs">
           <button
-            onClick={() => setMapType('street')}
+            onClick={() => setMapType('standard')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'street' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
+              mapType === 'standard' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
             }`}
           >
             Street
           </button>
           <button
-            onClick={() => setMapType('satellite')}
+            onClick={() => setMapType('transport')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'satellite' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
+              mapType === 'transport' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
             }`}
           >
-            Satellite
+            Transit
           </button>
           <button
-            onClick={() => setMapType('terrain')}
+            onClick={() => setMapType('cycle')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'terrain' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
+              mapType === 'cycle' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
             }`}
           >
-            Terrain
+            Cycle
           </button>
         </div>
       </div>
