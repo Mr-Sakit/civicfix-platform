@@ -36,6 +36,8 @@ The team must decide:
 - whether to use GHCR or Azure Container Registry
 - whether to deploy dev only first or both dev and prod
 - whether PostgreSQL should be public-disabled/private-only from day one
+- whether DNS will be managed in Azure DNS or Cloudflare
+- final frontend and API hostnames
 - who owns Terraform state access
 
 ## Prepare Terraform remote state
@@ -64,8 +66,10 @@ Recommended order:
 6. capture Terraform outputs
 7. update External Secrets Key Vault URL
 8. install AKS add-ons: ingress controller, cert-manager, External Secrets Operator, Argo CD
-9. connect Argo CD to the repo
-10. sync dev environment first
+9. bind the ingress controller to the Terraform-created static public IP
+10. create DNS records for frontend and API hostnames
+11. connect Argo CD to the repo
+12. sync dev environment first
 
 ## Evidence to capture
 

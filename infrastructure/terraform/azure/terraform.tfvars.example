@@ -5,6 +5,12 @@ location     = "swedencentral"
 aks_node_count   = 1
 aks_node_vm_size = "Standard_D2s_v3"
 
+# Leave null to use rg-<project>-<environment>-nodes.
+aks_node_resource_group_name = null
+
+# Reserves a stable public IP for the ingress controller.
+create_ingress_public_ip = true
+
 postgres_sku_name   = "B_Standard_B2s"
 postgres_storage_mb = 32768
 postgres_version    = "16"

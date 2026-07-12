@@ -8,6 +8,21 @@ output "aks_cluster_name" {
   value       = azurerm_kubernetes_cluster.main.name
 }
 
+output "aks_node_resource_group_name" {
+  description = "Deterministic AKS managed node resource group name."
+  value       = azurerm_kubernetes_cluster.main.node_resource_group
+}
+
+output "ingress_public_ip_address" {
+  description = "Static public IP address reserved for the Kubernetes ingress controller."
+  value       = var.create_ingress_public_ip ? azurerm_public_ip.ingress[0].ip_address : null
+}
+
+output "ingress_public_ip_name" {
+  description = "Static public IP resource name reserved for the Kubernetes ingress controller."
+  value       = var.create_ingress_public_ip ? azurerm_public_ip.ingress[0].name : null
+}
+
 output "aks_oidc_issuer_url" {
   description = "AKS OIDC issuer URL used for workload identity."
   value       = azurerm_kubernetes_cluster.main.oidc_issuer_url

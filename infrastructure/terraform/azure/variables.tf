@@ -57,6 +57,18 @@ variable "aks_node_vm_size" {
   default     = "Standard_D2s_v3"
 }
 
+variable "aks_node_resource_group_name" {
+  description = "Optional deterministic AKS managed node resource group name. Leave null to use rg-<project>-<environment>-nodes."
+  type        = string
+  default     = null
+}
+
+variable "create_ingress_public_ip" {
+  description = "Create a static public IP address for the Kubernetes ingress controller."
+  type        = bool
+  default     = true
+}
+
 variable "postgres_sku_name" {
   description = "Azure Database for PostgreSQL Flexible Server SKU."
   type        = string

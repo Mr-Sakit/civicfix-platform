@@ -78,6 +78,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   resource_group_name = azurerm_resource_group.main.name
   dns_prefix          = "aks-${local.name_prefix}-${random_string.suffix.result}"
   kubernetes_version  = var.aks_kubernetes_version
+  node_resource_group = local.aks_node_resource_group_name
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
@@ -103,6 +104,17 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   tags = local.common_tags
+}
+
+resource "azurerm_public_ip" "ingress" {
+  count = var.create_ingress_public_ip ? 1 : 0
+
+  name                = "pip-${local.name_prefix}-ingress"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = local.common_tags
 }
 
 resource "azurerm_federated_identity_credential" "external_secrets" {

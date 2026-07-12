@@ -78,7 +78,37 @@ Use Terraform outputs to update:
 - External Secrets workload identity client ID annotation
 - AKS kubeconfig for cluster access
 - Argo CD cluster destination
-- DNS and ingress configuration
+- ingress controller static public IP configuration
+- DNS records for frontend and API hostnames
+
+Useful outputs:
+
+```powershell
+terraform output resource_group_name
+terraform output aks_cluster_name
+terraform output aks_node_resource_group_name
+terraform output ingress_public_ip_address
+terraform output ingress_public_ip_name
+terraform output key_vault_uri
+```
+
+## Rebuilding after manual Azure deletion
+
+If an administrator manually deletes the Azure resource group, Terraform state may still contain the old resources.
+
+Before rebuilding:
+
+```powershell
+terraform -chdir=infrastructure/terraform/azure plan -refresh-only -var-file="terraform.tfvars"
+```
+
+Then review the normal plan:
+
+```powershell
+terraform -chdir=infrastructure/terraform/azure plan -var-file="terraform.tfvars"
+```
+
+If the plan shows Terraform will recreate the missing resources, apply only after confirming cost and subscription.
 
 ## Safety notes
 
