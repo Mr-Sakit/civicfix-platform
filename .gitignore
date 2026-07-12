@@ -25,6 +25,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Local presentation/team notes
+docs/presentation-keynote-speech.md
+docs/team-progress-report.md
+
 # Terraform
 .terraform/
 *.tfstate
