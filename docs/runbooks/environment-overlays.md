@@ -25,6 +25,15 @@ Expected namespace:
 
 ## Apply production
 
+Create the runtime application secret before applying the overlay. Do not commit real secret values.
+
+```powershell
+kubectl -n civicfix-prod create secret generic civicfix-app-secret `
+  --from-literal=POSTGRES_PASSWORD="<replace-with-runtime-password>" `
+  --from-literal=DATABASE_URL="postgres://civicfix_user:<replace-with-runtime-password>@civicfix-postgres:5432/civicfix" `
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
 ```powershell
 kubectl apply -k deploy/kubernetes/overlays/prod
 ```
@@ -42,7 +51,6 @@ kubectl -n civicfix-prod get pods,svc
 
 ## Notes
 
-- The production overlay still uses demo secret values and production URL placeholders.
-- Before a real shared deployment, replace demo secrets with a proper secret-management approach.
-- Before a real public deployment, add ingress, DNS, and TLS configuration.
-- The overlays now include ingress/TLS placeholders; replace placeholder hostnames before real deployment.
+- `deploy/kubernetes/base/secret.example.yaml` is a template only; it is not applied by Kustomize.
+- For shared or production deployments, create `civicfix-app-secret` through a runtime command or External Secrets Operator.
+- Before a real public deployment, replace placeholder hostnames with owned DNS names and enable TLS automation.
