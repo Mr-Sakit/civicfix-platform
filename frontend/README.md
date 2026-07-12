@@ -1,13 +1,15 @@
-# Frontend
+# CivicFix Frontend
 
-The frontend will provide the user interface for:
+React + Vite frontend for the CivicFix Platform.
 
-- Residents submitting community issue reports
-- Residents tracking report status
-- Admin or maintenance users reviewing reports
-- Teams updating issue status and resolution details
+This implementation contains the current citizen and municipality dashboard UI:
 
-Framework: React with Vite.
+- Citizen dashboard
+- Citizen report wizard
+- Citizen activity feed
+- Municipality dashboard
+- Municipality map view
+- Shared report state and status badges
 
 ## Local commands
 
@@ -17,3 +19,8 @@ npm run dev
 ```
 
 Default local URL: `http://localhost:3000`
+
+## Notes
+
+The current frontend uses local React state and `localStorage` for demo data.
+Backend API integration will be added in a follow-up step.
