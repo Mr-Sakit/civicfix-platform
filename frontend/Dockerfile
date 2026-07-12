@@ -6,6 +6,10 @@ COPY package*.json ./
 RUN npm install
 
 COPY index.html ./index.html
+COPY vite.config.ts ./vite.config.ts
+COPY tailwind.config.js ./tailwind.config.js
+COPY tsconfig*.json ./
+COPY public ./public
 COPY src ./src
 RUN chown -R node:node /app
 
