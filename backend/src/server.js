@@ -61,6 +61,7 @@ const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => 
   const extension = mimeType.split("/")[1].replace("jpeg", "jpg");
   const safeOriginalName = String(imageName ?? "issue-photo")
     .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/\.(png|jpg|jpeg|webp)$/i, "")
     .slice(0, 80);
   const fileName = `${issueId}-${Date.now()}-${safeOriginalName}.${extension}`;
   const filePath = path.join(uploadRoot, fileName);
