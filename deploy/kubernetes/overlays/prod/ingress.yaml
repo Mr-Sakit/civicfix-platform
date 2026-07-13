@@ -13,45 +13,23 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - civicfix.example.com
+        - e-document.tech
       secretName: civicfix-prod-frontend-tls
   rules:
-    - host: civicfix.example.com
+    - host: e-document.tech
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: civicfix-backend
+                port:
+                  name: http
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: civicfix-frontend
-                port:
-                  name: http
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: civicfix-backend
-  labels:
-    app.kubernetes.io/name: civicfix-backend
-    app.kubernetes.io/part-of: civicfix-platform
-    civicfix.io/environment: prod
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - api.civicfix.example.com
-      secretName: civicfix-prod-backend-tls
-  rules:
-    - host: api.civicfix.example.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: civicfix-backend
                 port:
                   name: http
