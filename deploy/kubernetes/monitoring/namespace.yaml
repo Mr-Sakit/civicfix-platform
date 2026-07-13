@@ -1,8 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: civicfix
+  name: civicfix-monitoring
   labels:
     app.kubernetes.io/name: civicfix-platform
     app.kubernetes.io/part-of: civicfix-platform
-

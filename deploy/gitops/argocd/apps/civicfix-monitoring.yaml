@@ -9,12 +9,12 @@ metadata:
 spec:
   project: civicfix-platform
   source:
-    repoURL: git@github.com:Mr-Sakit/civicfix-platform.git
+    repoURL: https://github.com/Mr-Sakit/civicfix-platform.git
     targetRevision: main
     path: deploy/kubernetes/monitoring
   destination:
     server: https://kubernetes.default.svc
-    namespace: civicfix
+    namespace: civicfix-monitoring
   syncPolicy:
     automated:
       prune: true

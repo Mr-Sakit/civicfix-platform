@@ -1,16 +1,4 @@
 apiVersion: v1
-kind: Secret
-metadata:
-  name: civicfix-grafana-secret
-  labels:
-    app.kubernetes.io/name: civicfix-grafana
-    app.kubernetes.io/part-of: civicfix-platform
-type: Opaque
-stringData:
-  GF_SECURITY_ADMIN_USER: "admin"
-  GF_SECURITY_ADMIN_PASSWORD: "replace-with-grafana-admin-password"
----
-apiVersion: v1
 kind: Service
 metadata:
   name: civicfix-grafana
@@ -93,4 +81,3 @@ spec:
         - name: grafana-dashboards
           configMap:
             name: civicfix-grafana-dashboards
-
