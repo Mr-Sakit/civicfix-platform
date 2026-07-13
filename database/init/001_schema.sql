@@ -42,6 +42,15 @@ CREATE TABLE IF NOT EXISTS civic_issues (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS issue_photos (
+  id SERIAL PRIMARY KEY,
+  issue_id INTEGER NOT NULL REFERENCES civic_issues(id) ON DELETE CASCADE,
+  file_name VARCHAR(255) NOT NULL,
+  file_path TEXT NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS issue_status_history (
   id SERIAL PRIMARY KEY,
   issue_id INTEGER NOT NULL REFERENCES civic_issues(id) ON DELETE CASCADE,

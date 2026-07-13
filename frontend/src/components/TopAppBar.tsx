@@ -2,22 +2,18 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const TopAppBar: React.FC = () => {
-  const { userRole, setUserRole, activeTab, setActiveTab } = useApp();
+  const { currentUser, userRole, logout, activeTab, setActiveTab } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
-
-  const handleRoleToggle = (role: 'citizen' | 'admin') => {
-    setUserRole(role);
-  };
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-margin py-base bg-surface-bright dark:bg-surface-dim border-b border-outline-variant/30 shadow-sm h-16">
       {/* Unified Logo Component */}
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab(userRole === 'citizen' ? 'home' : 'dashboard')}>
         <span className="material-symbols-outlined text-primary text-3xl">account_balance</span>
-        <h1 className="text-headline-md font-headline-md font-extrabold text-primary tracking-tight">CiviFix</h1>
+        <h1 className="text-headline-md font-headline-md font-extrabold text-primary tracking-tight">CivicFix</h1>
       </div>
 
-      {/* Role Switcher & Navigation Links (Desktop) */}
+      {/* Role-aware navigation links (Desktop) */}
       <div className="flex items-center gap-lg">
         {userRole === 'citizen' ? (
           <nav className="hidden md:flex gap-md">
@@ -80,24 +76,9 @@ export const TopAppBar: React.FC = () => {
 
       {/* Right Controls */}
       <div className="flex items-center gap-md">
-        {/* Sleek Role Switcher Pill */}
-        <div className="flex bg-surface-container-high p-1 rounded-xl w-fit">
-          <button
-            onClick={() => handleRoleToggle('citizen')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              userRole === 'citizen' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Citizen
-          </button>
-          <button
-            onClick={() => handleRoleToggle('admin')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              userRole === 'admin' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Admin
-          </button>
+        <div className="hidden sm:flex flex-col items-end leading-tight">
+          <span className="text-xs font-bold text-on-surface">{currentUser?.name}</span>
+          <span className="text-[10px] uppercase tracking-wider text-primary">{currentUser?.role === 'admin' ? 'City Manager' : 'Citizen'}</span>
         </div>
 
         {/* Notifications and Profile */}
@@ -110,12 +91,15 @@ export const TopAppBar: React.FC = () => {
             <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border border-white"></span>
           </button>
           
-          <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-outline-variant hover:border-primary transition-colors">
-            <img
-              className="w-full h-full object-cover"
-              alt="Profile"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAc25QVEBSRbtOy4x6ndaprqofp_QENoCCaioAQUP7LBiyxioNkOfQFZbVEF3hfTS_60Et5jKv3-M7QfgzooEyZM7wXIoyaWCdKL42T5fszvQb90l65TWdpFE7PXV3g4ywknrEw6ICKIgL1Pf_RcIJ0S6I0D3Cw85sxLrdmsNMUeeFRlKv-nsfzvj0XYYvh4hm0p5bWgsuOrAOHQQZNvT9g1PN05MObGnHf4oQ6JPzJ8O_5Nl33-xs7TDl9DNOMUdOIsXIVpx9YrX8"
-            />
+          <button
+            onClick={logout}
+            className="h-10 px-3 rounded-full border border-outline-variant hover:border-primary transition-colors flex items-center gap-2 text-xs font-bold"
+            title="Sign out"
+          >
+            <span className="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+              {currentUser?.name?.split(' ').map((part) => part[0]).join('').slice(0, 2) ?? 'CF'}
+            </span>
+            <span className="hidden sm:inline">Logout</span>
           </button>
 
           {showNotifications && (

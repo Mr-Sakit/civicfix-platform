@@ -26,6 +26,12 @@ FROM roles
 WHERE roles.name = 'resident'
 ON CONFLICT (email) DO NOTHING;
 
+INSERT INTO users (full_name, email, role_id)
+SELECT 'CivicFix Operations Admin', 'admin.demo@civicfix.local', roles.id
+FROM roles
+WHERE roles.name = 'admin'
+ON CONFLICT (email) DO NOTHING;
+
 INSERT INTO civic_issues (
   title,
   description,

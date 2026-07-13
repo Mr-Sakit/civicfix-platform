@@ -14,6 +14,14 @@ export interface BackendIssue {
   category: string;
   assigned_team_id: number | null;
   assigned_team: string | null;
+  image_url: string | null;
+}
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  role: 'citizen' | 'admin';
 }
 
 export interface BackendCategory {
@@ -50,6 +58,11 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
 };
 
 export const civicfixApi = {
+  login: (credentials: { email: string; password: string }) =>
+    request<AuthUser>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
   getIssues: () => request<BackendIssue[]>('/api/issues'),
   getCategories: () => request<BackendCategory[]>('/api/categories'),
   getTeams: () => request<BackendTeam[]>('/api/teams'),
@@ -60,6 +73,8 @@ export const civicfixApi = {
     address: string;
     latitude: number;
     longitude: number;
+    imageDataUrl?: string;
+    imageName?: string;
   }) =>
     request<BackendIssue>('/api/issues', {
       method: 'POST',

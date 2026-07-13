@@ -1,12 +1,90 @@
 import cors from "cors";
 import express from "express";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadRoot = path.resolve(__dirname, "..", "uploads");
 
 app.use(cors({ origin: config.corsOrigin }));
-app.use(express.json());
+app.use(express.json({ limit: "12mb" }));
+app.use("/uploads", express.static(uploadRoot));
+
+const demoCredentials = new Map([
+  ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
+  ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }]
+]);
+
+const ensureRuntimeSchema = async () => {
+  await mkdir(uploadRoot, { recursive: true });
+  await query(`
+    CREATE TABLE IF NOT EXISTS issue_photos (
+      id SERIAL PRIMARY KEY,
+      issue_id INTEGER NOT NULL REFERENCES civic_issues(id) ON DELETE CASCADE,
+      file_name VARCHAR(255) NOT NULL,
+      file_path TEXT NOT NULL,
+      mime_type VARCHAR(100) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`
+    INSERT INTO users (full_name, email, role_id)
+    SELECT 'CivicFix Operations Admin', 'admin.demo@civicfix.local', roles.id
+    FROM roles
+    WHERE roles.name = 'admin'
+    ON CONFLICT (email) DO NOTHING
+  `);
+};
+
+const getPublicBaseUrl = (request) => {
+  const forwardedProto = request.get("x-forwarded-proto");
+  const protocol = forwardedProto ?? request.protocol;
+  return `${protocol}://${request.get("host")}`;
+};
+
+const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => {
+  if (!imageDataUrl) return null;
+
+  const match = /^data:(image\/(?:png|jpe?g|webp));base64,([A-Za-z0-9+/=]+)$/.exec(imageDataUrl);
+  if (!match) {
+    const error = new Error("imageDataUrl must be a PNG, JPG, JPEG, or WEBP data URL");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const [, mimeType, base64] = match;
+  const extension = mimeType.split("/")[1].replace("jpeg", "jpg");
+  const safeOriginalName = String(imageName ?? "issue-photo")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .slice(0, 80);
+  const fileName = `${issueId}-${Date.now()}-${safeOriginalName}.${extension}`;
+  const filePath = path.join(uploadRoot, fileName);
+  const buffer = Buffer.from(base64, "base64");
+
+  if (buffer.byteLength > 10 * 1024 * 1024) {
+    const error = new Error("Image must be smaller than 10MB");
+    error.statusCode = 413;
+    throw error;
+  }
+
+  await writeFile(filePath, buffer);
+  const publicPath = `/uploads/${fileName}`;
+
+  await query(
+    `
+      INSERT INTO issue_photos (issue_id, file_name, file_path, mime_type)
+      VALUES ($1, $2, $3, $4)
+    `,
+    [issueId, fileName, publicPath, mimeType]
+  );
+
+  return `${getPublicBaseUrl(request)}${publicPath}`;
+};
 
 app.get("/health", async (_request, response) => {
   try {
@@ -40,6 +118,7 @@ app.get("/api", (_request, response) => {
       "API for community infrastructure issue reporting and resolution.",
     endpoints: [
       "/health",
+      "/api/auth/login",
       "/api/issues",
       "/api/teams",
       "/api/issues/:id/status",
@@ -50,6 +129,43 @@ app.get("/api", (_request, response) => {
       "/api/categories"
     ]
   });
+});
+
+app.post("/api/auth/login", async (request, response, next) => {
+  try {
+    const email = String(request.body.email ?? "").trim().toLowerCase();
+    const password = String(request.body.password ?? "");
+    const credential = demoCredentials.get(email);
+
+    if (!credential || credential.password !== password) {
+      return response.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const result = await query(
+      `
+        SELECT users.id, users.full_name, users.email, roles.name AS role
+        FROM users
+        JOIN roles ON roles.id = users.role_id
+        WHERE users.email = $1
+      `,
+      [email]
+    );
+
+    if (result.rowCount === 0) {
+      return response.status(404).json({ message: "Demo user is not seeded" });
+    }
+
+    response.json({
+      data: {
+        id: result.rows[0].id,
+        name: result.rows[0].full_name,
+        email: result.rows[0].email,
+        role: credential.role
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/api/categories", async (_request, response, next) => {
@@ -171,10 +287,18 @@ app.get("/api/issues", async (_request, response, next) => {
         ci.updated_at,
         ic.name AS category,
         teams.id AS assigned_team_id,
-        teams.name AS assigned_team
+        teams.name AS assigned_team,
+        photos.file_path AS image_url
       FROM civic_issues ci
       JOIN issue_categories ic ON ic.id = ci.category_id
       LEFT JOIN teams ON teams.id = ci.assigned_team_id
+      LEFT JOIN LATERAL (
+        SELECT file_path
+        FROM issue_photos
+        WHERE issue_photos.issue_id = ci.id
+        ORDER BY created_at ASC
+        LIMIT 1
+      ) photos ON TRUE
       ORDER BY ci.created_at DESC
       LIMIT 25
     `);
@@ -187,7 +311,7 @@ app.get("/api/issues", async (_request, response, next) => {
 
 app.post("/api/issues", async (request, response, next) => {
   try {
-    const { title, description, categoryId, address, latitude, longitude } =
+    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName } =
       request.body;
 
     if (!title || !description || !categoryId) {
@@ -207,7 +331,47 @@ app.post("/api/issues", async (request, response, next) => {
       [title, description, categoryId, address, latitude, longitude]
     );
 
-    response.status(201).json({ data: result.rows[0] });
+    await saveIssuePhoto({
+      issueId: result.rows[0].id,
+      imageDataUrl,
+      imageName
+    }, request);
+
+    const createdIssue = await query(
+      `
+        SELECT
+          ci.id,
+          ci.title,
+          ci.description,
+          ci.status,
+          ci.priority,
+          ci.address,
+          ci.latitude,
+          ci.longitude,
+          ci.created_at,
+          ci.updated_at,
+          ic.name AS category,
+          teams.id AS assigned_team_id,
+          teams.name AS assigned_team,
+          photos.file_path AS image_url
+        FROM civic_issues ci
+        JOIN issue_categories ic ON ic.id = ci.category_id
+        LEFT JOIN teams ON teams.id = ci.assigned_team_id
+        LEFT JOIN LATERAL (
+          SELECT file_path
+          FROM issue_photos
+          WHERE issue_photos.issue_id = ci.id
+          ORDER BY created_at ASC
+          LIMIT 1
+        ) photos ON TRUE
+        WHERE ci.id = $1
+      `,
+      [result.rows[0].id]
+    );
+
+    response.status(201).json({
+      data: createdIssue.rows[0]
+    });
   } catch (error) {
     next(error);
   }
@@ -358,12 +522,19 @@ app.patch("/api/issues/:id/status", async (request, response, next) => {
 });
 
 app.use((error, _request, response, _next) => {
-  response.status(500).json({
+  response.status(error.statusCode ?? 500).json({
     message: "Unexpected server error",
     detail: config.nodeEnv === "production" ? undefined : error.message
   });
 });
 
-app.listen(config.port, () => {
-  console.log(`CivicFix backend listening on port ${config.port}`);
-});
+ensureRuntimeSchema()
+  .then(() => {
+    app.listen(config.port, () => {
+      console.log(`CivicFix backend listening on port ${config.port}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialize CivicFix runtime schema", error);
+    process.exit(1);
+  });

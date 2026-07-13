@@ -29,22 +29,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const mapLayer = mapType === 'cycle' ? 'C' : mapType === 'transport' ? 'T' : 'M';
   const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=${mapLayer}&marker=${centerLat}%2C${centerLng}`;
 
-  // Coordinates mock to CSS percentages on the static map image
   const getPinPosition = (report: Report) => {
-    // Generate distinct coordinates based on report ID or use lat/lng
-    switch (report.id) {
-      case '#FIX-8842': return { top: '25%', left: '42%' };
-      case '#FIX-8841': return { top: '55%', left: '65%' };
-      case '#FIX-8839': return { top: '40%', left: '20%' };
-      case '#FIX-8835': return { top: '70%', left: '35%' };
-      case '#FIX-8834': return { top: '48%', left: '50%' };
-      default:
-        // Hash the ID to deterministic percentages
-        const num = parseInt(report.id.replace(/\D/g, '')) || 0;
-        const top = 20 + (num % 50) + '%';
-        const left = 15 + ((num * 7) % 65) + '%';
-        return { top, left };
-    }
+    const latRange = Math.max(span * 2, 0.0001);
+    const lngRange = Math.max(span * 2, 0.0001);
+    const top = Math.min(92, Math.max(8, ((centerLat + span - report.lat) / latRange) * 100));
+    const left = Math.min(92, Math.max(8, ((report.lng - (centerLng - span)) / lngRange) * 100));
+    return { top: `${top}%`, left: `${left}%` };
   };
 
   const getPinColor = (report: Report) => {

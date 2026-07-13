@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 
 export const SideNavBar: React.FC = () => {
-  const { activeTab, setActiveTab } = useApp();
+  const { currentUser, activeTab, setActiveTab } = useApp();
 
   return (
     <aside className="fixed flex flex-col h-full w-64 border-r border-outline-variant/20 bg-inverse-surface dark:bg-surface-container-lowest shadow-lg z-30 pt-16">
@@ -10,7 +10,7 @@ export const SideNavBar: React.FC = () => {
       <div className="p-lg border-b border-outline-variant/10">
         <div className="flex items-center gap-2 mb-xs">
           <span className="material-symbols-outlined text-primary-fixed-dim text-3xl">account_balance</span>
-          <h1 className="text-headline-md font-headline-md font-extrabold text-primary-fixed-dim tracking-tight">CiviFix</h1>
+          <h1 className="text-headline-md font-headline-md font-extrabold text-primary-fixed-dim tracking-tight">CivicFix</h1>
         </div>
         <div className="font-label-md text-label-md text-secondary-fixed/70 uppercase tracking-widest text-[10px]">Admin Control</div>
       </div>
@@ -44,11 +44,11 @@ export const SideNavBar: React.FC = () => {
 
       {/* Footer Profile */}
       <div className="p-lg mt-auto border-t border-outline-variant/10 flex items-center gap-md">
-        <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
-          JD
+          <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
+          {currentUser?.name?.split(' ').map((part) => part[0]).join('').slice(0, 2) ?? 'CF'}
         </div>
         <div>
-          <div className="font-label-md text-label-md text-on-primary-fixed">John Doe</div>
+          <div className="font-label-md text-label-md text-on-primary-fixed">{currentUser?.name ?? 'CivicFix Admin'}</div>
           <div className="text-[10px] uppercase tracking-wider text-secondary-fixed/50">Chief Admin</div>
         </div>
       </div>

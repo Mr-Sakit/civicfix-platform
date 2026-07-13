@@ -8,9 +8,14 @@ import ActivityFeed from './pages/citizen/ActivityFeed';
 import ReportIssueWizard from './pages/citizen/ReportIssueWizard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMapView from './pages/admin/AdminMapView';
+import LoginPage from './pages/LoginPage';
 
 export const AppContent: React.FC = () => {
-  const { userRole, activeTab } = useApp();
+  const { isAuthenticated, userRole, activeTab } = useApp();
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   const renderCitizenPage = () => {
     switch (activeTab) {

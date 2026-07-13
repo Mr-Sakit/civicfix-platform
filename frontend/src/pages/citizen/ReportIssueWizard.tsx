@@ -19,22 +19,41 @@ export const ReportIssueWizard: React.FC = () => {
   const [description, setDescription] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
   const [category, setCategory] = useState<'ROADS' | 'UTILITIES' | 'SANITATION' | 'GRAFFITI'>('ROADS');
+  const [coordinates, setCoordinates] = useState({ lat: 40.4093, lng: 49.8671 });
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [selectedImageName, setSelectedImageName] = useState('');
 
-  // Simulated upload state
+  // Upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
   const [localProgress, setLocalProgress] = useState(0);
 
-  // Auto-fill address on GPS click
   const handleGPSClick = () => {
-    setAddress('1200 N Lake Shore Dr, Chicago IL');
+    if (!navigator.geolocation) {
+      setGpsStatus('error');
+      return;
+    }
+
+    setGpsStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextCoordinates = {
+          lat: Number(position.coords.latitude.toFixed(6)),
+          lng: Number(position.coords.longitude.toFixed(6)),
+        };
+        setCoordinates(nextCoordinates);
+        setAddress(`GPS location: ${nextCoordinates.lat}, ${nextCoordinates.lng}`);
+        setGpsStatus('ready');
+      },
+      () => setGpsStatus('error'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   };
 
-  // Simulate file selection and upload progress
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      startSimulatedUpload(files[0].name);
+      uploadRealImage(files[0]);
     }
   };
 
@@ -43,30 +62,35 @@ export const ReportIssueWizard: React.FC = () => {
     if (fileInput) fileInput.click();
   };
 
-  const startSimulatedUpload = (name: string) => {
+  const uploadRealImage = (file: File) => {
     if (isUploading) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Please choose an image smaller than 10MB.');
+      return;
+    }
+
     setIsUploading(true);
-    setUploadFileName(name);
+    setUploadFileName(file.name);
+    setSelectedImageName(file.name);
     setLocalProgress(0);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      addWizardPhoto(String(reader.result));
+    };
+    reader.readAsDataURL(file);
 
     const interval = setInterval(() => {
       setLocalProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           setIsUploading(false);
-          // Add a new mock image depending on file name or random
-          const mockImages = [
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuBxBb_jQ959K88yf-u9hx6vtUTbmwIREDZ9mn-7nFyoc1WqalwcYrbgnQy3CCsGRlooCaTylR4u0Byp3pdLsc89TawS6HBKkjFL_n9WZLDWOT8TuVNZn0nVxhNnUyaoY85Mg7WJP3ZDhsHmvk9TwRhY8UmT4bO1_nid8f1cQfgfXAiurnjsXF_RPoacbc2uXF0a2E_D-kL4qJx7f-fyXB3G9hi7UFe3E1lRQHur1P82OHGUcDCFHES0VSMhxoAw5I282FbgxuYwEL4',
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuAz3qsG0UjGEIpAmpdTGT3q_75mAMUGyEaRNFjrwQZVs4NgqmaCnBUUXpBfYdiZNurQDe5p2E6PqFdiEBOuS2vf1g4bK8d70nsP9gy4zqmatZB5NJvLiXTa8rYN6UGks7KQFV4jQJ-Cw0zRLwIQkNI0Gy2vWAvTw59lW_taSS23WMduwsnjGjf4-aspbEDxGdly2Yo1TBGzSniBTHgJ8LIJyY7QhDcflPhDPVmlRIhowoKuy6t4Epje6nTglkzkdPzzidDX3ycOuCU',
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuAzmwKJY65gpFp7cHEFVKryHwq1l1hcbo8hOrBJ4M28m5yXYIOX6HDwTMPX5U4TXmWShXxO3gsZk-L-nETpbcn17ZWdpcesqVB4zSg358v8DRPWfrbrbUGXkKMdb5xYqGel8hSobEjf2UYmx_pyU4MwOzKLkeNLroUTYxOpPdm9AbfrfwfTybtBwaUpuP6yk08-Umohe-x1ad-t215eVIlAc_EOGSlJLSgZHa1uuV8kZp6JOgJX9AwKh-g-KlsIwf6lU1uKqSTCGrc'
-          ];
-          const newPhoto = mockImages[Math.floor(Math.random() * mockImages.length)];
-          addWizardPhoto(newPhoto);
           return 100;
         }
-        return prev + Math.floor(Math.random() * 15) + 5;
+        return Math.min(100, prev + 20);
       });
-    }, 200);
+    }, 120);
   };
 
   const handleNextStep = () => {
@@ -94,10 +118,11 @@ export const ReportIssueWizard: React.FC = () => {
       priority: isUrgent ? 'High' : 'Medium',
       status: 'Reported',
       image: wizardPhotos[0] || '',
+      imageName: selectedImageName,
       assignedTo: 'Unassigned',
       reporter: 'Sarah J.',
-      lat: 41.8781,
-      lng: -87.6298,
+      lat: coordinates.lat,
+      lng: coordinates.lng,
       isUrgent: isUrgent
     });
 
@@ -247,9 +272,19 @@ export const ReportIssueWizard: React.FC = () => {
             className="h-[56px] px-md rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-md text-label-md flex items-center justify-center gap-sm transition-all border border-outline-variant/20 shadow-sm active:scale-95"
           >
             <span className="material-symbols-outlined leading-none">my_location</span>
-            Use Current GPS
+            {gpsStatus === 'loading' ? 'Locating...' : 'Use Current GPS'}
           </button>
         </div>
+        {gpsStatus === 'ready' && (
+          <p className="text-xs text-secondary font-semibold">
+            GPS locked: {coordinates.lat}, {coordinates.lng}
+          </p>
+        )}
+        {gpsStatus === 'error' && (
+          <p className="text-xs text-error font-semibold">
+            GPS permission was denied or unavailable. You can still type the location manually.
+          </p>
+        )}
 
         {/* Mini Map Preview */}
         <div className="relative h-64 w-full rounded-xl overflow-hidden shadow-inner border border-outline-variant/30">
