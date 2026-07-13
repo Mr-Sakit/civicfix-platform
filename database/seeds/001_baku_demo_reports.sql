@@ -240,22 +240,22 @@ INSERT INTO issue_photos (issue_id, file_name, file_path, mime_type)
 SELECT
   civic_issues.id,
   CASE civic_issues.title
-    WHEN 'Pothole on Tbilisi Avenue near 20 Yanvar' THEN 'baku-pothole.svg'
-    WHEN 'Streetlight outage along Baku Boulevard' THEN 'baku-boulevard-lighting.svg'
-    WHEN 'Overflowing bins near Nizami Street' THEN 'baku-nizami-waste.svg'
-    WHEN 'Water leak near Icherisheher metro' THEN 'baku-icherisheher-water.svg'
-    WHEN 'Damaged sidewalk ramp at Ganjlik Mall crossing' THEN 'baku-ganjlik-ramp.svg'
-    WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN 'baku-narimanov-graffiti.svg'
+    WHEN 'Pothole on Tbilisi Avenue near 20 Yanvar' THEN 'baku-pothole.png'
+    WHEN 'Streetlight outage along Baku Boulevard' THEN 'baku-boulevard-lighting.png'
+    WHEN 'Overflowing bins near Nizami Street' THEN 'baku-nizami-waste.png'
+    WHEN 'Water leak near Icherisheher metro' THEN 'baku-icherisheher-water.png'
+    WHEN 'Damaged sidewalk ramp at Ganjlik Mall crossing' THEN 'baku-ganjlik-ramp.png'
+    WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN 'baku-narimanov-graffiti.png'
   END,
   CASE civic_issues.title
-    WHEN 'Pothole on Tbilisi Avenue near 20 Yanvar' THEN '/demo-images/baku-pothole.svg'
-    WHEN 'Streetlight outage along Baku Boulevard' THEN '/demo-images/baku-boulevard-lighting.svg'
-    WHEN 'Overflowing bins near Nizami Street' THEN '/demo-images/baku-nizami-waste.svg'
-    WHEN 'Water leak near Icherisheher metro' THEN '/demo-images/baku-icherisheher-water.svg'
-    WHEN 'Damaged sidewalk ramp at Ganjlik Mall crossing' THEN '/demo-images/baku-ganjlik-ramp.svg'
-    WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN '/demo-images/baku-narimanov-graffiti.svg'
+    WHEN 'Pothole on Tbilisi Avenue near 20 Yanvar' THEN '/demo-images/baku-pothole.png'
+    WHEN 'Streetlight outage along Baku Boulevard' THEN '/demo-images/baku-boulevard-lighting.png'
+    WHEN 'Overflowing bins near Nizami Street' THEN '/demo-images/baku-nizami-waste.png'
+    WHEN 'Water leak near Icherisheher metro' THEN '/demo-images/baku-icherisheher-water.png'
+    WHEN 'Damaged sidewalk ramp at Ganjlik Mall crossing' THEN '/demo-images/baku-ganjlik-ramp.png'
+    WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN '/demo-images/baku-narimanov-graffiti.png'
   END,
-  'image/svg+xml'
+  'image/png'
 FROM civic_issues
 WHERE civic_issues.title IN (
   'Pothole on Tbilisi Avenue near 20 Yanvar',
