@@ -5,6 +5,7 @@ namespace: civicfix-prod
 
 resources:
   - ../../base
+  - certificate.yaml
   - ingress.yaml
 
 images:

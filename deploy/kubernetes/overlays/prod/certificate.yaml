@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: civicfix-prod-frontend-tls
+  labels:
+    app.kubernetes.io/name: civicfix-frontend
+    app.kubernetes.io/part-of: civicfix-platform
+    civicfix.io/environment: prod
+spec:
+  secretName: civicfix-prod-frontend-tls
+  dnsNames:
+    - civicfix.tech
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
