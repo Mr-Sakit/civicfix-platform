@@ -14,4 +14,10 @@ locals {
     },
     var.tags
   )
+
+  storage_account_name = substr(
+    lower("st${replace(var.project_name, "-", "")}${var.environment}${random_string.suffix.result}"),
+    0,
+    24
+  )
 }

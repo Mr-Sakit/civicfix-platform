@@ -1,27 +1,32 @@
 import cors from "cors";
 import express from "express";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
+import { aiQueueEnqueueTotal, observeHttpRequest, registry } from "./metrics.js";
+import { enqueueImageAnalysisJob, ensureQueueReady } from "./queue.js";
+import { ensureStorageReady, getLocalUploadRoot, loadImageObject, saveImageObject } from "./storage.js";
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadRoot = path.resolve(__dirname, "..", "uploads");
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
-app.use("/uploads", express.static(uploadRoot));
+app.use(observeHttpRequest);
+app.use("/uploads", express.static(getLocalUploadRoot()));
 
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
   ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }]
 ]);
 
+const getPublicBaseUrl = (request) => {
+  const forwardedProto = request.get("x-forwarded-proto");
+  const protocol = forwardedProto ?? request.protocol;
+  return `${protocol}://${request.get("host")}`;
+};
+
 const ensureRuntimeSchema = async () => {
-  await mkdir(uploadRoot, { recursive: true });
+  await ensureStorageReady();
+  await ensureQueueReady();
   await query(`
     CREATE TABLE IF NOT EXISTS issue_photos (
       id SERIAL PRIMARY KEY,
@@ -33,18 +38,21 @@ const ensureRuntimeSchema = async () => {
     )
   `);
   await query(`
+    ALTER TABLE civic_issues
+      ADD COLUMN IF NOT EXISTS ai_status VARCHAR(40) NOT NULL DEFAULT 'not_requested',
+      ADD COLUMN IF NOT EXISTS ai_category VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS ai_severity VARCHAR(40),
+      ADD COLUMN IF NOT EXISTS ai_confidence NUMERIC(5, 4),
+      ADD COLUMN IF NOT EXISTS ai_summary TEXT,
+      ADD COLUMN IF NOT EXISTS ai_processed_at TIMESTAMPTZ
+  `);
+  await query(`
     INSERT INTO users (full_name, email, role_id)
     SELECT 'CivicFix Operations Admin', 'admin.demo@civicfix.local', roles.id
     FROM roles
     WHERE roles.name = 'admin'
     ON CONFLICT (email) DO NOTHING
   `);
-};
-
-const getPublicBaseUrl = (request) => {
-  const forwardedProto = request.get("x-forwarded-proto");
-  const protocol = forwardedProto ?? request.protocol;
-  return `${protocol}://${request.get("host")}`;
 };
 
 const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => {
@@ -64,7 +72,6 @@ const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => 
     .replace(/\.(png|jpg|jpeg|webp)$/i, "")
     .slice(0, 80);
   const fileName = `${issueId}-${Date.now()}-${safeOriginalName}.${extension}`;
-  const filePath = path.join(uploadRoot, fileName);
   const buffer = Buffer.from(base64, "base64");
 
   if (buffer.byteLength > 10 * 1024 * 1024) {
@@ -73,18 +80,20 @@ const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => 
     throw error;
   }
 
-  await writeFile(filePath, buffer);
-  const publicPath = `/uploads/${fileName}`;
+  const savedImage = await saveImageObject({ fileName, buffer, mimeType });
+  const publicUrl = savedImage.publicUrl.startsWith("/")
+    ? `${getPublicBaseUrl(request)}${savedImage.publicUrl}`
+    : savedImage.publicUrl;
 
   await query(
     `
       INSERT INTO issue_photos (issue_id, file_name, file_path, mime_type)
       VALUES ($1, $2, $3, $4)
     `,
-    [issueId, fileName, publicPath, mimeType]
+    [issueId, fileName, publicUrl, mimeType]
   );
 
-  return `${getPublicBaseUrl(request)}${publicPath}`;
+  return publicUrl;
 };
 
 app.get("/health", async (_request, response) => {
@@ -263,7 +272,8 @@ app.get("/metrics", async (_request, response, next) => {
       ...byTeam.rows.map(
         (row) =>
           `civicfix_issues_by_team{team="${String(row.team).replaceAll('"', '\\"')}"} ${row.count}`
-      )
+      ),
+      await registry.metrics()
     ];
 
     response.type("text/plain").send(`${lines.join("\n")}\n`);
@@ -286,6 +296,12 @@ app.get("/api/issues", async (_request, response, next) => {
         ci.longitude,
         ci.created_at,
         ci.updated_at,
+        ci.ai_status,
+        ci.ai_category,
+        ci.ai_severity,
+        ci.ai_confidence,
+        ci.ai_summary,
+        ci.ai_processed_at,
         ic.name AS category,
         teams.id AS assigned_team_id,
         teams.name AS assigned_team,
@@ -332,11 +348,33 @@ app.post("/api/issues", async (request, response, next) => {
       [title, description, categoryId, address, latitude, longitude]
     );
 
-    await saveIssuePhoto({
+    const photoUrl = await saveIssuePhoto({
       issueId: result.rows[0].id,
       imageDataUrl,
       imageName
     }, request);
+
+    if (photoUrl) {
+      const queueResult = await enqueueImageAnalysisJob({
+        issueId: result.rows[0].id,
+        imageUrl: photoUrl,
+        imageName,
+        requestedAt: new Date().toISOString()
+      });
+      aiQueueEnqueueTotal.inc({
+        provider: queueResult.provider,
+        status: queueResult.enqueued ? "enqueued" : "skipped"
+      });
+
+      await query(
+        `
+          UPDATE civic_issues
+          SET ai_status = $1, updated_at = NOW()
+          WHERE id = $2
+        `,
+        [queueResult.enqueued ? "pending" : "not_requested", result.rows[0].id]
+      );
+    }
 
     const createdIssue = await query(
       `
@@ -351,6 +389,12 @@ app.post("/api/issues", async (request, response, next) => {
           ci.longitude,
           ci.created_at,
           ci.updated_at,
+          ci.ai_status,
+          ci.ai_category,
+          ci.ai_severity,
+          ci.ai_confidence,
+          ci.ai_summary,
+          ci.ai_processed_at,
           ic.name AS category,
           teams.id AS assigned_team_id,
           teams.name AS assigned_team,
@@ -527,6 +571,33 @@ app.use((error, _request, response, _next) => {
     message: "Unexpected server error",
     detail: config.nodeEnv === "production" ? undefined : error.message
   });
+});
+
+app.get("/api/photos/:fileName", async (request, response, next) => {
+  try {
+    const fileName = request.params.fileName;
+    const result = await query(
+      `
+        SELECT file_name, mime_type
+        FROM issue_photos
+        WHERE file_name = $1
+        LIMIT 1
+      `,
+      [fileName]
+    );
+
+    if (result.rowCount === 0) {
+      return response.status(404).json({ message: "Photo not found" });
+    }
+
+    const image = await loadImageObject(fileName);
+    response
+      .type(result.rows[0].mime_type)
+      .set("Cache-Control", "private, max-age=300")
+      .send(image);
+  } catch (error) {
+    next(error);
+  }
 });
 
 ensureRuntimeSchema()

@@ -214,6 +214,47 @@ resource "azurerm_key_vault_secret" "database_url" {
   ]
 }
 
+resource "azurerm_storage_account" "main" {
+  count = var.create_storage_account ? 1 : 0
+
+  name                            = local.storage_account_name
+  resource_group_name             = azurerm_resource_group.main.name
+  location                        = azurerm_resource_group.main.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+  tags                            = local.common_tags
+}
+
+resource "azurerm_storage_container" "issue_photos" {
+  count = var.create_storage_account ? 1 : 0
+
+  name                  = "issue-photos"
+  storage_account_id    = azurerm_storage_account.main[0].id
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_queue" "image_analysis_jobs" {
+  count = var.create_storage_account ? 1 : 0
+
+  name                 = "image-analysis-jobs"
+  storage_account_name = azurerm_storage_account.main[0].name
+}
+
+resource "azurerm_key_vault_secret" "storage_connection_string" {
+  count = var.create_storage_account ? 1 : 0
+
+  name         = "civicfix-${var.environment}-storage-connection-string"
+  value        = azurerm_storage_account.main[0].primary_connection_string
+  key_vault_id = azurerm_key_vault.main.id
+  tags         = local.common_tags
+
+  depends_on = [
+    azurerm_role_assignment.current_user_key_vault_secrets_officer
+  ]
+}
+
 resource "azurerm_container_registry" "main" {
   count               = var.create_container_registry ? 1 : 0
   name                = "acr${replace(var.project_name, "-", "")}${var.environment}${random_string.suffix.result}"

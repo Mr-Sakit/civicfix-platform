@@ -111,6 +111,12 @@ variable "create_container_registry" {
   default     = false
 }
 
+variable "create_storage_account" {
+  description = "Create Azure Storage resources for issue photos and asynchronous AI image-analysis queue messages."
+  type        = bool
+  default     = true
+}
+
 variable "tags" {
   description = "Additional Azure tags."
   type        = map(string)

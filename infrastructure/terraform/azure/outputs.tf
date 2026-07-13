@@ -52,3 +52,18 @@ output "container_registry_login_server" {
   description = "Optional Azure Container Registry login server."
   value       = try(azurerm_container_registry.main[0].login_server, null)
 }
+
+output "storage_account_name" {
+  description = "Storage account used for issue photo blobs and AI image-analysis queue messages."
+  value       = try(azurerm_storage_account.main[0].name, null)
+}
+
+output "issue_photos_container_name" {
+  description = "Private Blob container for uploaded issue photos."
+  value       = try(azurerm_storage_container.issue_photos[0].name, null)
+}
+
+output "image_analysis_queue_name" {
+  description = "Storage Queue used by the AI image-analysis worker."
+  value       = try(azurerm_storage_queue.image_analysis_jobs[0].name, null)
+}

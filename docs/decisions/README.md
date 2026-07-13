@@ -16,6 +16,7 @@ ADRs help the team explain not only what was built, but why certain tools, patte
 - [ADR-0008: Use Terraform for Azure infrastructure as code](ADR-0008-terraform-azure-infrastructure.md)
 - [ADR-0009: Use Azure Storage for Terraform remote state](ADR-0009-terraform-remote-state.md)
 - [ADR-0010: Deploy production images with immutable commit SHA tags](ADR-0010-immutable-image-tags.md)
+- [ADR-0011: Use asynchronous AI image processing](ADR-0011-async-ai-image-processing.md)
 
 ## Status values
 

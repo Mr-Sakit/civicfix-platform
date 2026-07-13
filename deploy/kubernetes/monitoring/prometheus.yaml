@@ -28,6 +28,11 @@ data:
         static_configs:
           - targets:
               - civicfix-backend.civicfix-prod.svc.cluster.local:4000
+      - job_name: civicfix-ai-worker
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - civicfix-ai-worker.civicfix-prod.svc.cluster.local:9100
 ---
 apiVersion: v1
 kind: Service

@@ -1,41 +1,48 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: civicfix-backend
+  name: civicfix-ai-worker
   labels:
-    app.kubernetes.io/name: civicfix-backend
+    app.kubernetes.io/name: civicfix-ai-worker
     app.kubernetes.io/part-of: civicfix-platform
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: civicfix-backend
+    app.kubernetes.io/name: civicfix-ai-worker
   ports:
-    - name: http
-      port: 4000
-      targetPort: http
+    - name: metrics
+      port: 9100
+      targetPort: metrics
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: civicfix-backend
+  name: civicfix-ai-worker
   labels:
-    app.kubernetes.io/name: civicfix-backend
+    app.kubernetes.io/name: civicfix-ai-worker
     app.kubernetes.io/part-of: civicfix-platform
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: civicfix-backend
+      app.kubernetes.io/name: civicfix-ai-worker
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: civicfix-backend
+        app.kubernetes.io/name: civicfix-ai-worker
         app.kubernetes.io/part-of: civicfix-platform
     spec:
       containers:
-        - name: backend
+        - name: worker
           image: ghcr.io/mr-sakit/civicfix-backend:latest
           imagePullPolicy: IfNotPresent
+          command:
+            - npm
+            - run
+            - worker
+          ports:
+            - name: metrics
+              containerPort: 9100
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
@@ -44,40 +51,17 @@ spec:
             capabilities:
               drop:
                 - ALL
-          ports:
-            - name: http
-              containerPort: 4000
           env:
             - name: NODE_ENV
               valueFrom:
                 configMapKeyRef:
                   name: civicfix-app-config
                   key: NODE_ENV
-            - name: PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: civicfix-app-config
-                  key: BACKEND_PORT
-            - name: CORS_ORIGIN
-              valueFrom:
-                configMapKeyRef:
-                  name: civicfix-app-config
-                  key: CORS_ORIGIN
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: civicfix-app-secret
                   key: DATABASE_URL
-            - name: STORAGE_PROVIDER
-              valueFrom:
-                configMapKeyRef:
-                  name: civicfix-app-config
-                  key: STORAGE_PROVIDER
-            - name: AZURE_STORAGE_BLOB_CONTAINER
-              valueFrom:
-                configMapKeyRef:
-                  name: civicfix-app-config
-                  key: AZURE_STORAGE_BLOB_CONTAINER
             - name: QUEUE_PROVIDER
               valueFrom:
                 configMapKeyRef:
@@ -88,28 +72,23 @@ spec:
                 configMapKeyRef:
                   name: civicfix-app-config
                   key: AZURE_STORAGE_QUEUE_NAME
+            - name: WORKER_POLL_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: WORKER_POLL_INTERVAL_MS
+            - name: WORKER_METRICS_PORT
+              value: "9100"
             - name: AZURE_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
                   name: civicfix-app-secret
                   key: AZURE_STORAGE_CONNECTION_STRING
                   optional: true
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 20
           resources:
             requests:
-              cpu: 100m
+              cpu: 50m
               memory: 128Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 300m
+              memory: 384Mi

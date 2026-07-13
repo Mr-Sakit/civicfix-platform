@@ -6,7 +6,20 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? process.env.BACKEND_PORT ?? 4000),
   databaseUrl: process.env.DATABASE_URL,
-  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000"
+  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+  storage: {
+    provider: process.env.STORAGE_PROVIDER ?? "local",
+    azureConnectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
+    azureBlobContainer: process.env.AZURE_STORAGE_BLOB_CONTAINER ?? "issue-photos",
+    azurePublicBaseUrl: process.env.AZURE_STORAGE_PUBLIC_BASE_URL
+  },
+  queue: {
+    provider: process.env.QUEUE_PROVIDER ?? "none",
+    azureConnectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
+    azureQueueName: process.env.AZURE_STORAGE_QUEUE_NAME ?? "image-analysis-jobs",
+    pollIntervalMs: Number(process.env.WORKER_POLL_INTERVAL_MS ?? 5000)
+  },
+  workerMetricsPort: Number(process.env.WORKER_METRICS_PORT ?? 9100)
 };
 
 if (!config.databaseUrl) {

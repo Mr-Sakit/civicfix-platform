@@ -20,6 +20,11 @@ services:
       PORT: 4000
       DATABASE_URL: postgres://civicfix_user:${POSTGRES_PASSWORD:-change-me}@postgres:5432/civicfix
       CORS_ORIGIN: http://localhost:3000
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_BLOB_CONTAINER: ${AZURE_STORAGE_BLOB_CONTAINER:-issue-photos}
+      QUEUE_PROVIDER: ${QUEUE_PROVIDER:-none}
+      AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
     ports:
       - "4000:4000"
     depends_on:
@@ -30,6 +35,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  worker:
+    build:
+      context: ./backend
+    container_name: civicfix-ai-worker
+    command: ["npm", "run", "worker"]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://civicfix_user:${POSTGRES_PASSWORD:-change-me}@postgres:5432/civicfix
+      QUEUE_PROVIDER: ${QUEUE_PROVIDER:-none}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
+      WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-5000}
+      WORKER_METRICS_PORT: 9100
+    ports:
+      - "9100:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:16-alpine
