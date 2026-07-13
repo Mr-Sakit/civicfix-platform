@@ -64,13 +64,13 @@ const processJob = async (job) => {
       `
         UPDATE civic_issues
         SET ai_status = 'completed',
-            ai_category = $1,
-            ai_severity = $2,
-            ai_confidence = $3,
+            ai_category = $1::varchar,
+            ai_severity = $2::varchar,
+            ai_confidence = $3::numeric,
             ai_summary = $4,
             priority = CASE
-              WHEN $2 = 'critical' THEN 'critical'
-              WHEN $2 = 'high' THEN 'high'
+              WHEN $2::varchar = 'critical' THEN 'critical'
+              WHEN $2::varchar = 'high' THEN 'high'
               ELSE priority
             END,
             ai_processed_at = NOW(),
