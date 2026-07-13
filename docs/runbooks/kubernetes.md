@@ -42,6 +42,6 @@ Expected local URLs:
 
 ## Important notes
 
-- Create `civicfix-app-secret` before applying workloads. The repository includes `secret.example.yaml` as a template only.
+- Create `civicfix-app-secret` before applying workloads. Do not commit Kubernetes Secret manifests; use a runtime `kubectl create secret` command or External Secrets Operator.
 - If GitHub Container Registry packages are private, the cluster needs an image pull secret.
 - For AKS, the PostgreSQL StatefulSet may later be replaced with Azure Database for PostgreSQL.

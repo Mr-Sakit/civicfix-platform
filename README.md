@@ -26,7 +26,7 @@ CivicFix is no longer only a skeleton application. The project now includes:
 - local Docker Compose runtime;
 - container images published through GitHub Container Registry;
 - Kubernetes manifests with Kustomize overlays;
-- live AKS Student deployment;
+- live AKS deployment on Azure;
 - Argo CD GitOps deployment;
 - Prometheus and Grafana monitoring;
 - Terraform Azure infrastructure foundation;
@@ -36,13 +36,13 @@ CivicFix is no longer only a skeleton application. The project now includes:
 
 ## Live demo environment
 
-The current demo environment runs on **Azure Kubernetes Service** in the **Azure for Students** subscription.
+The current demo environment runs on **Azure Kubernetes Service** in the capstone Azure subscription. Public traffic is routed through an NGINX ingress controller and a static Azure public IP.
 
 Demo endpoints:
 
-- Frontend: `http://74.241.177.70:3000`
-- Backend health: `http://4.225.2.17:4000/health`
-- Backend API: `http://4.225.2.17:4000/api/issues`
+- Frontend: `https://e-document.tech`
+- Backend API: `https://e-document.tech/api`
+- Backend issues endpoint: `https://e-document.tech/api/issues`
 
 Monitoring and GitOps dashboards are intentionally not exposed publicly. They are accessed with `kubectl port-forward` during demo to reduce public attack surface and Azure cost.
 
@@ -62,8 +62,8 @@ Backend API
         +------ Redis
 
 DevOps Platform:
-GitHub Actions → GHCR → AKS → Argo CD → Prometheus/Grafana
-Terraform → Azure Resource Group / AKS / Key Vault foundation
+GitHub Actions → GHCR → AKS ingress → Argo CD → Prometheus/Grafana
+Terraform → Azure Resource Group / AKS / Key Vault / PostgreSQL foundation
 ```
 
 ## Technology stack
@@ -146,12 +146,14 @@ The Kubernetes manifests are organized with Kustomize:
 - `deploy/kubernetes/overlays/aks-student`
 - `deploy/kubernetes/overlays/monitoring-aks-student`
 
+The production overlay pins frontend and backend deployments to immutable Git commit SHA image tags. The base manifests keep `latest` only as a local/default placeholder; production GitOps should always promote an explicit SHA tag.
+
 Argo CD applications:
 
 - `civicfix-student-application`
 - `civicfix-student-monitoring`
 
-Both are currently configured for the Student AKS demo environment.
+The Student applications remain documented as a low-cost demo path. The current production-style deployment uses the `prod` overlay and static ingress IP foundation.
 
 ## Monitoring
 
@@ -184,31 +186,30 @@ The project includes several security layers:
 - Trivy vulnerability and secret scanning
 - Trivy configuration audit
 - Gitleaks secret scanning
-- custom Git history secret guard
 - GitHub Actions pipeline enforcement
-- placeholder-based secret templates
 - Azure Key Vault / External Secrets design foundation
 
-Important security remediation already completed:
+Security rules for this repository:
 
-- a demo Grafana password was removed from Git history;
-- an Azure managed identity client ID was redacted from Git history;
-- secret scanning now passes;
-- configuration audit findings are preserved as visible hardening backlog.
+- do not commit Kubernetes Secret manifests;
+- create runtime secrets through `kubectl create secret`, Azure Key Vault, or External Secrets Operator;
+- treat any committed real credential as exposed and rotate it;
+- rewrite public Git history when a real secret is found in reachable commits;
+- keep Trivy and Gitleaks findings visible in CI.
 
 ## Azure and cost control
 
-The live environment currently uses the Azure Student subscription for cost control.
+The live environment currently uses the capstone Azure subscription. The earlier Azure Student deployment was destroyed after the demo stage to control cost.
 
 Implemented guardrails:
 
 - small one-node AKS cluster;
 - internal-only monitoring services;
 - `$20` monthly Azure budget alert;
-- Student-specific Kustomize overlay;
+- reusable Terraform workspace and variable model;
 - Terraform destroy/runbook path for stopping resources.
 
-The final capstone subscription can be used later by applying the same Terraform and GitOps workflow with adjusted variables.
+The same Terraform and GitOps workflow can be recreated in another subscription with adjusted variables.
 
 ## Documentation map
 
@@ -225,9 +226,9 @@ Useful starting points:
 
 Some choices are intentional for the Student/demo environment:
 
-- Public frontend/backend LoadBalancers are used for quick demo access.
-- Domain and TLS are planned separately.
+- Cloudflare currently provides public HTTPS for the temporary domain; origin-side TLS automation remains a hardening task.
 - PostgreSQL currently runs in-cluster for the Student demo because managed PostgreSQL hit Azure Student capacity restrictions.
+- Azure managed PostgreSQL is provisioned by Terraform for the production-style environment, but the Kubernetes app still needs a final cutover from in-cluster PostgreSQL.
 - Monitoring and Argo CD are accessed through port-forwarding rather than public exposure.
 - Trivy configuration audit findings remain visible as hardening backlog.
 

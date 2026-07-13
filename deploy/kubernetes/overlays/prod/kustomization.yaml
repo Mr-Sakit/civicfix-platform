@@ -7,6 +7,12 @@ resources:
   - ../../base
   - ingress.yaml
 
+images:
+  - name: ghcr.io/mr-sakit/civicfix-backend
+    newTag: 740ffab4bb10e6e60b2bbb188675da70a0536cc3
+  - name: ghcr.io/mr-sakit/civicfix-frontend
+    newTag: 740ffab4bb10e6e60b2bbb188675da70a0536cc3
+
 patches:
   - path: namespace-patch.yaml
     target:

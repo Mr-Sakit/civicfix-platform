@@ -18,7 +18,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      DATABASE_URL: postgres://civicfix_user:civicfix_password@postgres:5432/civicfix
+      DATABASE_URL: postgres://civicfix_user:${POSTGRES_PASSWORD:-change-me}@postgres:5432/civicfix
       CORS_ORIGIN: http://localhost:3000
     ports:
       - "4000:4000"
@@ -37,7 +37,7 @@ services:
     environment:
       POSTGRES_DB: civicfix
       POSTGRES_USER: civicfix_user
-      POSTGRES_PASSWORD: civicfix_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
     ports:
       - "5432:5432"
     volumes:

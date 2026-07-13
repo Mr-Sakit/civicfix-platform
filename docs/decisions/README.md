@@ -15,6 +15,7 @@ ADRs help the team explain not only what was built, but why certain tools, patte
 - [ADR-0007: Prepare Azure Key Vault integration through External Secrets Operator](ADR-0007-azure-key-vault-external-secrets.md)
 - [ADR-0008: Use Terraform for Azure infrastructure as code](ADR-0008-terraform-azure-infrastructure.md)
 - [ADR-0009: Use Azure Storage for Terraform remote state](ADR-0009-terraform-remote-state.md)
+- [ADR-0010: Deploy production images with immutable commit SHA tags](ADR-0010-immutable-image-tags.md)
 
 ## Status values
 

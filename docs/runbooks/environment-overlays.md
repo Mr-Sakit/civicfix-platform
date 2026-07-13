@@ -51,6 +51,5 @@ kubectl -n civicfix-prod get pods,svc
 
 ## Notes
 
-- `deploy/kubernetes/base/secret.example.yaml` is a template only; it is not applied by Kustomize.
-- For shared or production deployments, create `civicfix-app-secret` through a runtime command or External Secrets Operator.
+- Do not commit Kubernetes Secret manifests. Create `civicfix-app-secret` through a runtime command or External Secrets Operator.
 - Before a real public deployment, replace placeholder hostnames with owned DNS names and enable TLS automation.

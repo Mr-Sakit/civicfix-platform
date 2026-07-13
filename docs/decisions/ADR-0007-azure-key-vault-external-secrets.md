@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-CivicFix currently includes demo Kubernetes Secret placeholders so manifests can render and local/demo deployments can work. Real production secrets should not be committed to Git.
+CivicFix workloads need database and operational credentials at runtime. Real production secrets must not be committed to Git, including Kubernetes Secret manifests with inline `stringData` values.
 
 The future cloud target is Azure, so Azure Key Vault is the natural long-term secret store. The Kubernetes workloads should still consume ordinary Kubernetes Secrets to keep application configuration simple.
 
@@ -27,3 +27,5 @@ The intended future flow is:
 This keeps secret values outside Git while preserving a simple Kubernetes runtime model.
 
 The manifests are prepared but not active yet. They require Azure Key Vault, AKS workload identity, and External Secrets Operator before they can be applied.
+
+Until External Secrets Operator is enabled, operators must create Kubernetes Secrets at runtime with `kubectl create secret` or an equivalent secure deployment process.
