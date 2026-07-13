@@ -307,14 +307,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setTeams(apiTeams);
         setIsApiConnected(true);
 
-        if (apiIssues.length > 0) {
-          const mappedReports = apiIssues.map(mapBackendIssue);
-          setReports(mappedReports);
-          setSelectedReportId((current) => {
-            if (mappedReports.some((report) => report.id === current)) return current;
-            return mappedReports[0].id;
-          });
-        }
+        const mappedReports = apiIssues.map(mapBackendIssue);
+        setReports(mappedReports);
+        setSelectedReportId((current) => {
+          if (mappedReports.some((report) => report.id === current)) return current;
+          return mappedReports[0]?.id ?? '';
+        });
       } catch {
         setIsApiConnected(false);
       }
