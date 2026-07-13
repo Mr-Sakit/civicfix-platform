@@ -43,7 +43,10 @@ export const LoginPage: React.FC = () => {
             </div>
             <h2 className="text-headline-lg font-headline-lg text-on-surface mt-xs">Sign in to CivicFix</h2>
             <p className="text-on-surface-variant mt-xs text-body-md">
-              Choose a citizen or city manager account to open the matching interface.
+              Choose a citizen or city manager demo account to open the matching role-protected interface.
+            </p>
+            <p className="mt-sm text-xs text-on-surface-variant">
+              Demo authentication is for presentation use. Citizen accounts cannot open admin routes, and city manager accounts are kept in the operations interface.
             </p>
           </div>
 
@@ -83,10 +86,12 @@ export const LoginPage: React.FC = () => {
             <button type="button" onClick={() => useDemo('citizen')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
               <div className="font-bold text-on-surface">Citizen demo</div>
               <div className="text-xs text-on-surface-variant">resident.demo@civicfix.local</div>
+              <div className="text-xs text-on-surface-variant">Password: resident-demo</div>
             </button>
             <button type="button" onClick={() => useDemo('admin')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
               <div className="font-bold text-on-surface">Manager demo</div>
               <div className="text-xs text-on-surface-variant">admin.demo@civicfix.local</div>
+              <div className="text-xs text-on-surface-variant">Password: admin-demo</div>
             </button>
           </div>
         </form>

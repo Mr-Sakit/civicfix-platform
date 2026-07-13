@@ -34,7 +34,6 @@ interface AppContextType {
   selectedReportId: string;
   addReport: (report: Omit<Report, 'id' | 'date'>) => Promise<void>;
   updateReport: (id: string, updates: Partial<Report>) => Promise<void>;
-  setUserRole: (role: 'citizen' | 'admin') => void;
   setActiveTab: (tab: string) => void;
   setSelectedReportId: (id: string) => void;
   wizardStep: number;
@@ -63,6 +62,11 @@ const routeByRoleAndTab: Record<'citizen' | 'admin', Record<string, string>> = {
   },
 };
 
+const defaultTabByRole: Record<'citizen' | 'admin', string> = {
+  citizen: 'home',
+  admin: 'dashboard',
+};
+
 const getRouteState = (pathname: string): { role: 'citizen' | 'admin'; tab: string } => {
   if (pathname.startsWith('/admin/map')) {
     return { role: 'admin', tab: 'map' };
@@ -81,6 +85,30 @@ const getRouteState = (pathname: string): { role: 'citizen' | 'admin'; tab: stri
   }
 
   return { role: 'citizen', tab: 'home' };
+};
+
+const getProtectedRouteState = (
+  role: 'citizen' | 'admin',
+  pathname: string
+): { role: 'citizen' | 'admin'; tab: string; path: string } => {
+  const routeState = getRouteState(pathname);
+
+  if (routeState.role !== role) {
+    const tab = defaultTabByRole[role];
+    return {
+      role,
+      tab,
+      path: routeByRoleAndTab[role][tab],
+    };
+  }
+
+  const tab = routeByRoleAndTab[role][routeState.tab] ? routeState.tab : defaultTabByRole[role];
+
+  return {
+    role,
+    tab,
+    path: routeByRoleAndTab[role][tab],
+  };
 };
 
 const normalizeCategory = (category: string): Report['category'] => {
@@ -186,9 +214,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [categories, setCategories] = useState<BackendCategory[]>([]);
   const [teams, setTeams] = useState<BackendTeam[]>([]);
-  const [userRole, setUserRoleState] = useState<'citizen' | 'admin'>(currentUser?.role ?? initialRoute.role);
+  const [userRole, setUserRoleState] = useState<'citizen' | 'admin'>(currentUser?.role ?? 'citizen');
   const [activeTab, setActiveTabState] = useState<string>(
-    currentUser?.role === 'admin' ? 'dashboard' : initialRoute.tab
+    currentUser ? getProtectedRouteState(currentUser.role, window.location.pathname).tab : initialRoute.tab
   );
   const [selectedReportId, setSelectedReportId] = useState<string>('');
 
@@ -204,11 +232,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('civicfix_current_user', JSON.stringify(currentUser));
+      const protectedRoute = getProtectedRouteState(currentUser.role, window.location.pathname);
       setUserRoleState(currentUser.role);
-      const targetTab = currentUser.role === 'admin' ? 'dashboard' : 'home';
-      setActiveTabState((current) => (currentUser.role === 'admin' && !['dashboard', 'map'].includes(current) ? targetTab : current));
+      setActiveTabState(protectedRoute.tab);
+
+      if (window.location.pathname !== protectedRoute.path) {
+        window.history.replaceState({}, '', protectedRoute.path);
+      }
     } else {
       localStorage.removeItem('civicfix_current_user');
+      setUserRoleState('citizen');
     }
   }, [currentUser]);
 
@@ -241,20 +274,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const onPopState = () => {
-      const routeState = getRouteState(window.location.pathname);
-      setUserRoleState(routeState.role);
-      setActiveTabState(routeState.tab);
+      if (!currentUser) {
+        const routeState = getRouteState(window.location.pathname);
+        setUserRoleState('citizen');
+        setActiveTabState(routeState.tab);
+        return;
+      }
+
+      const protectedRoute = getProtectedRouteState(currentUser.role, window.location.pathname);
+      setUserRoleState(currentUser.role);
+      setActiveTabState(protectedRoute.tab);
+
+      if (window.location.pathname !== protectedRoute.path) {
+        window.history.replaceState({}, '', protectedRoute.path);
+      }
     };
 
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  }, [currentUser]);
 
   const navigateTo = (role: 'citizen' | 'admin', tab: string) => {
-    const nextPath = routeByRoleAndTab[role][tab] ?? '/';
+    const effectiveRole = currentUser?.role ?? role;
+    const safeTab = routeByRoleAndTab[effectiveRole][tab] ? tab : defaultTabByRole[effectiveRole];
+    const nextPath = routeByRoleAndTab[effectiveRole][safeTab];
 
-    setUserRoleState(role);
-    setActiveTabState(tab);
+    setUserRoleState(effectiveRole);
+    setActiveTabState(safeTab);
 
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, '', nextPath);
@@ -271,7 +317,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setUserRoleState('citizen');
     setActiveTabState('home');
-    window.history.pushState({}, '', '/');
+    window.history.replaceState({}, '', '/');
   };
 
   const addReport = async (reportData: Omit<Report, 'id' | 'date'>) => {
@@ -342,12 +388,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const setUserRole = (role: 'citizen' | 'admin') => {
-    navigateTo(role, role === 'citizen' ? 'home' : 'dashboard');
-  };
-
   const setActiveTab = (tab: string) => {
-    navigateTo(userRole, tab);
+    navigateTo(currentUser?.role ?? userRole, tab);
   };
 
   const addWizardPhoto = (photoUrl: string) => {
@@ -378,7 +420,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedReportId,
         addReport,
         updateReport,
-        setUserRole,
         setActiveTab,
         setSelectedReportId,
         wizardStep,
