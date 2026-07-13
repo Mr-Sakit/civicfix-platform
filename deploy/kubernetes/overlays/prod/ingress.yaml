@@ -13,10 +13,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - e-document.tech
+        - civicfix.tech
       secretName: civicfix-prod-frontend-tls
   rules:
-    - host: e-document.tech
+    - host: civicfix.tech
       http:
         paths:
           - path: /api

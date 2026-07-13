@@ -87,5 +87,5 @@ Current ingress host placeholders:
 
 - Dev frontend: `https://civicfix-dev.local`
 - Dev API: `https://api.civicfix-dev.local`
-- Prod frontend: `https://civicfix.example.com`
-- Prod API: `https://api.civicfix.example.com`
+- Prod frontend: `https://civicfix.tech`
+- Prod API: `https://civicfix.tech/api`

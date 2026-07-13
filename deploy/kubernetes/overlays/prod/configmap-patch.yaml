@@ -6,5 +6,5 @@ metadata:
     civicfix.io/environment: prod
 data:
   NODE_ENV: "production"
-  CORS_ORIGIN: "https://e-document.tech"
+  CORS_ORIGIN: "https://civicfix.tech"
   VITE_API_BASE_URL: ""

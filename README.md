@@ -40,9 +40,9 @@ The current demo environment runs on **Azure Kubernetes Service** in the capston
 
 Demo endpoints:
 
-- Frontend: `https://e-document.tech`
-- Backend API: `https://e-document.tech/api`
-- Backend issues endpoint: `https://e-document.tech/api/issues`
+- Frontend: `https://civicfix.tech`
+- Backend API: `https://civicfix.tech/api`
+- Backend issues endpoint: `https://civicfix.tech/api/issues`
 
 Monitoring and GitOps dashboards are intentionally not exposed publicly. They are accessed with `kubectl port-forward` during demo to reduce public attack surface and Azure cost.
 
