@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
-export const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const { login } = useApp();
   const [email, setEmail] = useState('resident.demo@civicfix.local');
   const [password, setPassword] = useState('resident-demo');
@@ -22,7 +26,7 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const useDemo = (role: 'citizen' | 'admin') => {
+  const applyDemoCredentials = (role: 'citizen' | 'admin') => {
     if (role === 'admin') {
       setEmail('admin.demo@civicfix.local');
       setPassword('admin-demo');
@@ -43,7 +47,7 @@ export const LoginPage: React.FC = () => {
             </div>
             <h2 className="text-headline-lg font-headline-lg text-on-surface mt-xs">Sign in to CivicFix</h2>
             <p className="text-on-surface-variant mt-xs text-body-md">
-              Choose a citizen or city manager account to open the matching interface.
+              Sign in as a citizen, city manager, or crew member.
             </p>
           </div>
 
@@ -79,12 +83,20 @@ export const LoginPage: React.FC = () => {
             {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>
 
+          <button
+            type="button"
+            onClick={() => onNavigate?.('/signup')}
+            className="text-center text-sm text-primary font-semibold hover:underline"
+          >
+            New here? Create an account
+          </button>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
-            <button type="button" onClick={() => useDemo('citizen')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
+            <button type="button" onClick={() => applyDemoCredentials('citizen')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
               <div className="font-bold text-on-surface">Citizen demo</div>
               <div className="text-xs text-on-surface-variant">resident.demo@civicfix.local</div>
             </button>
-            <button type="button" onClick={() => useDemo('admin')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
+            <button type="button" onClick={() => applyDemoCredentials('admin')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
               <div className="font-bold text-on-surface">Manager demo</div>
               <div className="text-xs text-on-surface-variant">admin.demo@civicfix.local</div>
             </button>

@@ -8,14 +8,17 @@
     "start": "node src/server.js",
     "worker": "node src/worker.js",
     "dev": "node --watch src/server.js",
-    "check": "node --check src/server.js && node --check src/worker.js && node --check src/healthcheck.js && node --check src/storage.js && node --check src/queue.js && node --check src/aiAnalyzer.js && node --test src/storage.test.js"
+    "check": "node --check src/server.js && node --check src/worker.js && node --check src/healthcheck.js && node --check src/storage.js && node --check src/queue.js && node --check src/keywordFallback.js && node --check src/gemini.js && node --check src/auth.js && node --test src/storage.test.js"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",
     "@azure/storage-queue": "^12.31.0",
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
     "prom-client": "^15.1.3"
   },

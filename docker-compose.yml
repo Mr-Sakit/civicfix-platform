@@ -5,6 +5,7 @@ services:
     container_name: civicfix-frontend
     environment:
       VITE_API_BASE_URL: http://localhost:4000
+      VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -25,6 +26,9 @@ services:
       AZURE_STORAGE_BLOB_CONTAINER: ${AZURE_STORAGE_BLOB_CONTAINER:-issue-photos}
       QUEUE_PROVIDER: ${QUEUE_PROVIDER:-none}
       AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      JWT_SECRET: ${JWT_SECRET:-civicfix-dev-secret-change-me}
     ports:
       - "4000:4000"
     depends_on:
@@ -49,6 +53,8 @@ services:
       AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
       WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-5000}
       WORKER_METRICS_PORT: 9100
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     ports:
       - "9100:9100"
     depends_on:
