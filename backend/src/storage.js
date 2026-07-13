@@ -1,9 +1,7 @@
 import { BlobServiceClient } from "@azure/storage-blob";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { config } from "./config.js";
 
-const localUploadRoot = path.resolve(process.cwd(), "uploads");
+const localImages = new Map();
 
 const normalizeBlobName = (fileName) => fileName.replace(/^\/+/, "");
 
@@ -26,13 +24,8 @@ export const ensureStorageReady = async () => {
   if (config.storage.provider === "azure-blob") {
     const containerClient = getAzureContainerClient();
     await containerClient.createIfNotExists();
-    return;
   }
-
-  await mkdir(localUploadRoot, { recursive: true });
 };
-
-export const getLocalUploadRoot = () => localUploadRoot;
 
 export const saveImageObject = async ({ fileName, buffer, mimeType }) => {
   if (config.storage.provider === "azure-blob") {
@@ -57,14 +50,16 @@ export const saveImageObject = async ({ fileName, buffer, mimeType }) => {
     };
   }
 
-  await mkdir(localUploadRoot, { recursive: true });
-  const filePath = path.join(localUploadRoot, fileName);
-  await writeFile(filePath, buffer);
+  const objectPath = normalizeBlobName(fileName);
+  localImages.set(objectPath, {
+    buffer: Buffer.from(buffer),
+    mimeType
+  });
 
   return {
-    provider: "local",
-    objectPath: `/uploads/${fileName}`,
-    publicUrl: `/uploads/${fileName}`
+    provider: "local-memory",
+    objectPath,
+    publicUrl: `/api/photos/${encodeURIComponent(objectPath)}`
   };
 };
 
@@ -82,6 +77,12 @@ export const loadImageObject = async (objectPath) => {
     return Buffer.concat(chunks);
   }
 
-  const fileName = path.basename(objectPath);
-  return readFile(path.join(localUploadRoot, fileName));
+  const image = localImages.get(normalizeBlobName(objectPath));
+  if (!image) {
+    const error = new Error("Local image object not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return image.buffer;
 };

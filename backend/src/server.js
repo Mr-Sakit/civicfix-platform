@@ -4,14 +4,13 @@ import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
 import { aiQueueEnqueueTotal, observeHttpRequest, registry } from "./metrics.js";
 import { enqueueImageAnalysisJob, ensureQueueReady } from "./queue.js";
-import { ensureStorageReady, getLocalUploadRoot, loadImageObject, saveImageObject } from "./storage.js";
+import { ensureStorageReady, loadImageObject, saveImageObject } from "./storage.js";
 
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
-app.use("/uploads", express.static(getLocalUploadRoot()));
 
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
