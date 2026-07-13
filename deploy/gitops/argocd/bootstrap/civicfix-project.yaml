@@ -12,6 +12,8 @@ spec:
     - git@github.com:Mr-Sakit/civicfix-platform.git
     - https://github.com/Mr-Sakit/civicfix-platform.git
   destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
     - namespace: external-secrets
       server: https://kubernetes.default.svc
     - namespace: civicfix-student

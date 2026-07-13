@@ -18,12 +18,6 @@ export const ActivityFeed: React.FC = () => {
     return true;
   });
 
-  const getWatchers = (report: Report) => {
-    // Generate deterministic counts for demo
-    const num = parseInt(report.id.replace(/\D/g, '')) || 0;
-    return (num % 30) + 5;
-  };
-
   const getFooterTime = (report: Report) => {
     if (report.status === 'Resolved') {
       return `Completed ${report.date}`;
@@ -122,10 +116,6 @@ export const ActivityFeed: React.FC = () => {
                     <h3 className="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">
                       {report.title}
                     </h3>
-                    <div className="flex items-center text-secondary font-bold shrink-0 ml-2">
-                      <span className="material-symbols-outlined text-[18px] mr-1">group</span>
-                      <span className="text-label-md">{getWatchers(report)}</span>
-                    </div>
                   </div>
 
                   <div className="flex items-center gap-xs text-on-surface-variant font-label-md text-label-md mb-md">

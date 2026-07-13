@@ -6,10 +6,9 @@ import { StatusBadge } from '../../components/StatusBadge';
 export const CitizenDashboard: React.FC = () => {
   const { reports, setActiveTab, setSelectedReportId } = useApp();
 
-  // Dynamically calculate counts
-  const reportedCount = reports.filter((r) => r.status === 'Reported').length + 8; // Offset for demo feel
-  const progressCount = reports.filter((r) => r.status === 'In Progress').length + 2;
-  const resolvedCount = reports.filter((r) => r.status === 'Resolved').length + 42;
+  const reportedCount = reports.filter((r) => r.status === 'Reported').length;
+  const progressCount = reports.filter((r) => r.status === 'In Progress').length;
+  const resolvedCount = reports.filter((r) => r.status === 'Resolved').length;
 
   // Recent community updates
   const recentUpdates = reports.slice(0, 3);
@@ -70,16 +69,17 @@ export const CitizenDashboard: React.FC = () => {
           </div>
           <div className="flex-1 relative min-h-0">
             <MapContainer interactive={false} />
-            <div className="absolute bottom-4 left-4 right-4 z-30 glass-card p-sm rounded-lg flex items-center gap-md border border-outline-variant/30 shadow-lg">
-              <div className="w-10 h-10 bg-error-container rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-error">warning</span>
+            {reports.length === 0 ? (
+              <div className="absolute bottom-4 left-4 right-4 z-30 glass-card p-sm rounded-lg flex items-center gap-md border border-outline-variant/30 shadow-lg">
+                <div className="w-10 h-10 bg-secondary-container rounded-lg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-secondary">check_circle</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-label-sm font-label-sm text-on-surface">No active reports</p>
+                  <p className="text-[10px] text-on-surface-variant">The live report feed is currently clear.</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-label-sm font-label-sm text-on-surface">Main Street Repairs</p>
-                <p className="text-[10px] text-on-surface-variant">Active road crew working today</p>
-              </div>
-              <span className="material-symbols-outlined text-outline">chevron_right</span>
-            </div>
+            ) : null}
           </div>
         </div>
 
@@ -131,7 +131,9 @@ export const CitizenDashboard: React.FC = () => {
             <span className="material-symbols-outlined text-outline cursor-pointer hover:text-on-surface transition-colors">more_horiz</span>
           </div>
           <div className="divide-y divide-surface-container/60">
-            {recentUpdates.map((report) => (
+            {recentUpdates.length === 0 ? (
+              <div className="p-lg text-center text-on-surface-variant">No community updates yet.</div>
+            ) : recentUpdates.map((report) => (
               <div
                 key={report.id}
                 onClick={() => {

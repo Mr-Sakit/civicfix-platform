@@ -37,10 +37,11 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Metrics Ribbon Calculations
-  const totalOpen = reports.filter((r) => r.status !== 'Resolved').length + 1280;
-  const criticalAlerts = reports.filter((r) => r.isUrgent).length + 40;
-  const inProgressTasks = reports.filter((r) => r.status === 'In Progress').length + 154;
+  const totalOpen = reports.filter((r) => r.status !== 'Resolved').length;
+  const criticalAlerts = reports.filter((r) => r.isUrgent).length;
+  const inProgressTasks = reports.filter((r) => r.status === 'In Progress').length;
+  const resolvedReports = reports.filter((r) => r.status === 'Resolved').length;
+  const resolutionRate = reports.length > 0 ? Math.round((resolvedReports / reports.length) * 100) : 0;
 
   // Queue filter logic
   const filteredQueue = reports.filter((report) => {
@@ -63,7 +64,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white p-md rounded-xl border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-sm">
             <span className="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg">inventory</span>
-            <span className="text-secondary font-bold text-label-sm">+12%</span>
+            <span className="text-on-surface-variant font-medium text-label-sm">Live</span>
           </div>
           <div className="text-on-surface-variant font-label-md text-sm">Total Open Issues</div>
           <div className="font-headline-md text-headline-md mt-xs font-bold">{totalOpen}</div>
@@ -83,7 +84,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white p-md rounded-xl border border-outline-variant/30 shadow-sm">
           <div className="flex items-center justify-between mb-sm">
             <span className="material-symbols-outlined text-secondary p-2 bg-secondary/10 rounded-lg">engineering</span>
-            <span className="text-on-surface-variant font-medium text-label-sm">Active Crew</span>
+            <span className="text-on-surface-variant font-medium text-label-sm">Live</span>
           </div>
           <div className="text-on-surface-variant font-label-md text-sm">In Progress Tasks</div>
           <div className="font-headline-md text-headline-md mt-xs font-bold">{inProgressTasks}</div>
@@ -93,10 +94,10 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white p-md rounded-xl border border-outline-variant/30 shadow-sm">
           <div className="flex items-center justify-between mb-sm">
             <span className="material-symbols-outlined text-tertiary p-2 bg-tertiary/10 rounded-lg">schedule</span>
-            <span className="text-secondary font-bold text-label-sm">-4h</span>
+            <span className="text-on-surface-variant font-medium text-label-sm">Live</span>
           </div>
-          <div className="text-on-surface-variant font-label-md text-sm">Avg. Resolution Time</div>
-          <div className="font-headline-md text-headline-md mt-xs font-bold">2.4 Days</div>
+          <div className="text-on-surface-variant font-label-md text-sm">Resolution Rate</div>
+          <div className="font-headline-md text-headline-md mt-xs font-bold">{resolutionRate}%</div>
         </div>
       </section>
 
@@ -229,9 +230,11 @@ export const AdminDashboard: React.FC = () => {
                       <span className="material-symbols-outlined text-5xl">image</span>
                     </div>
                   )}
-                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white p-2 rounded-lg text-[10px] font-mono select-none">
-                    IMG_SOURCE: CIVIC_CAM_442_A
-                  </div>
+                  {selectedReport.image ? (
+                    <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white p-2 rounded-lg text-[10px] font-mono select-none">
+                      IMG_SOURCE: citizen-upload
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* AI Classifier */}

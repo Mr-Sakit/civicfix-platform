@@ -47,89 +47,7 @@ interface AppContextType {
   setUploadProgress: (progress: number) => void;
 }
 
-const initialReports: Report[] = [
-  {
-    id: '#FIX-8842',
-    title: 'Severe Pothole on Oak St.',
-    description: 'Large pothole developed after the recent storm. Causing significant traffic slowing and safety concerns for cyclists.',
-    location: 'Oakwood Drive & 5th Ave',
-    category: 'ROADS',
-    priority: 'High',
-    status: 'In Progress',
-    date: '2 mins ago',
-    image: '',
-    assignedTo: 'Roads Dept - North',
-    reporter: 'Sarah J.',
-    lat: 40.7128,
-    lng: -74.0060,
-    isUrgent: true,
-    notes: 'Dispatch road crew immediately.'
-  },
-  {
-    id: '#FIX-8841',
-    title: 'Flickering Street Lamp',
-    description: 'Main square lighting is non-functional. The streetlight outside unit 402 has been flickering all night, causing visibility issues.',
-    location: 'North Park Plaza',
-    category: 'UTILITIES',
-    priority: 'Medium',
-    status: 'Reported',
-    date: '14 mins ago',
-    image: '',
-    assignedTo: 'Unassigned',
-    reporter: 'Anonymous',
-    lat: 40.7198,
-    lng: -74.0010,
-    isUrgent: false
-  },
-  {
-    id: '#FIX-8839',
-    title: 'Sanitation Overflow - Central Park',
-    description: 'A wide municipal trash bin is overflowing on the busy sidewalk. Various bags and loose paper are scattered around the base.',
-    location: '5th and Broadway',
-    category: 'SANITATION',
-    priority: 'Low',
-    status: 'Reported',
-    date: '42 mins ago',
-    image: '',
-    assignedTo: 'Unassigned',
-    reporter: 'Officer Chen',
-    lat: 40.7158,
-    lng: -74.0090,
-    isUrgent: false
-  },
-  {
-    id: '#FIX-8835',
-    title: 'Park Maintenance',
-    description: 'Broken benches replaced and debris cleared. The central area is now fully accessible and safe for public use.',
-    location: 'Sunset Memorial Park',
-    category: 'SANITATION',
-    priority: 'Low',
-    status: 'Resolved',
-    date: 'Yesterday',
-    image: '',
-    assignedTo: 'Sanitation Crew 2',
-    reporter: 'Sarah J.',
-    lat: 40.7258,
-    lng: -73.9980,
-    isUrgent: false
-  },
-  {
-    id: '#FIX-8834',
-    title: 'Hydrant Leakage',
-    description: 'Constant leak detected at the base of hydrant #442. Reported as a significant water waste and potential freeze hazard.',
-    location: 'Beacon Hill - East Wing',
-    category: 'UTILITIES',
-    priority: 'High',
-    status: 'Reported',
-    date: '5h ago',
-    image: '',
-    assignedTo: 'Unassigned',
-    reporter: 'Citizen #0912',
-    lat: 40.7100,
-    lng: -74.0040,
-    isUrgent: true
-  }
-];
+const initialReports: Report[] = [];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -272,7 +190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTabState] = useState<string>(
     currentUser?.role === 'admin' ? 'dashboard' : initialRoute.tab
   );
-  const [selectedReportId, setSelectedReportId] = useState<string>('#FIX-8842');
+  const [selectedReportId, setSelectedReportId] = useState<string>('');
 
   // Wizard state for reporting an issue
   const [wizardStep, setWizardStep] = useState<number>(1);
