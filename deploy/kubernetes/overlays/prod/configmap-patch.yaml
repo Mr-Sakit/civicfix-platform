@@ -8,3 +8,7 @@ data:
   NODE_ENV: "production"
   CORS_ORIGIN: "https://civicfix.tech"
   VITE_API_BASE_URL: ""
+  STORAGE_PROVIDER: "azure-blob"
+  AZURE_STORAGE_BLOB_CONTAINER: "issue-photos"
+  QUEUE_PROVIDER: "azure-queue"
+  AZURE_STORAGE_QUEUE_NAME: "image-analysis-jobs"

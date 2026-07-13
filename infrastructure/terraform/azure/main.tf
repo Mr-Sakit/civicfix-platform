@@ -238,8 +238,8 @@ resource "azurerm_storage_container" "issue_photos" {
 resource "azurerm_storage_queue" "image_analysis_jobs" {
   count = var.create_storage_account ? 1 : 0
 
-  name                 = "image-analysis-jobs"
-  storage_account_name = azurerm_storage_account.main[0].name
+  name               = "image-analysis-jobs"
+  storage_account_id = azurerm_storage_account.main[0].id
 }
 
 resource "azurerm_key_vault_secret" "storage_connection_string" {
