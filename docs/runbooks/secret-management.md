@@ -19,7 +19,9 @@ The repository still includes demo Kubernetes Secret placeholders so the platfor
 
 ## Install External Secrets Operator
 
-The operator is pinned in the repository through a Kustomize overlay:
+The operator is pinned in the repository through a Kustomize overlay and managed by the `civicfix-external-secrets-operator` Argo CD application.
+
+Manual bootstrap command, if Argo CD is not available yet:
 
 ```powershell
 kubectl apply -k deploy/kubernetes/secrets/external-secrets/operator
@@ -37,13 +39,15 @@ Do not commit the client ID as a secret value. Keep it in Azure/Terraform output
 
 ## Apply Key Vault secret sync
 
+Production secret sync is managed by the `civicfix-prod-secrets` Argo CD application.
+
 Render the prepared manifests:
 
 ```powershell
 kubectl kustomize deploy/kubernetes/secrets/external-secrets/azure-key-vault
 ```
 
-Apply the production sync resources:
+Manual bootstrap command, if Argo CD is not available yet:
 
 ```powershell
 kubectl apply -k deploy/kubernetes/secrets/external-secrets/azure-key-vault
