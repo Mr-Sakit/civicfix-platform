@@ -21,7 +21,11 @@ Clean Baku demo reports live in:
 
 - `database/seeds/001_baku_demo_reports.sql`
 
-The seed is idempotent for the named demo reports: it removes previous copies of those same demo titles, then inserts a fresh Baku issue set with realistic statuses, teams, coordinates, priorities, and AI triage summaries.
+The seed is idempotent for the named demo reports: it removes previous copies of those same demo titles, then inserts a fresh Baku issue set with realistic statuses, teams, coordinates, priorities, AI triage summaries, and matching demo images.
+
+The image assets live in:
+
+- `frontend/public/demo-images/`
 
 Apply to the production in-cluster PostgreSQL database:
 

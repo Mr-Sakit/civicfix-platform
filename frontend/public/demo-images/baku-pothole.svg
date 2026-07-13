@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Pothole on Tbilisi Avenue near 20 Yanvar</title>
+  <desc id="desc">Illustration of a damaged road lane in Baku with a pothole and traffic warning markers.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dff3ff"/>
+      <stop offset="1" stop-color="#f7fbff"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#707783"/>
+      <stop offset="1" stop-color="#313842"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#sky)"/>
+  <rect y="310" width="960" height="230" fill="url(#road)"/>
+  <path d="M0 315h960" stroke="#c8d0d9" stroke-width="10"/>
+  <path d="M472 328l-40 212" stroke="#f7d154" stroke-width="10" stroke-dasharray="38 30"/>
+  <path d="M570 318l80 222" stroke="#f7d154" stroke-width="10" stroke-dasharray="38 30"/>
+  <rect x="45" y="194" width="248" height="116" rx="18" fill="#f6f1df"/>
+  <rect x="59" y="208" width="220" height="18" rx="9" fill="#c0392b"/>
+  <text x="72" y="270" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#1e293b">20 Yanvar</text>
+  <ellipse cx="505" cy="425" rx="128" ry="45" fill="#171b22"/>
+  <ellipse cx="505" cy="418" rx="86" ry="24" fill="#0b0d12"/>
+  <path d="M380 390l-36 74h72z" fill="#f97316"/>
+  <path d="M344 464h72" stroke="#fff" stroke-width="10"/>
+  <path d="M612 385l-36 74h72z" fill="#f97316"/>
+  <path d="M576 459h72" stroke="#fff" stroke-width="10"/>
+  <g fill="#0f172a" opacity=".14">
+    <rect x="650" y="170" width="52" height="140"/>
+    <rect x="718" y="128" width="82" height="182"/>
+    <rect x="818" y="186" width="64" height="124"/>
+  </g>
+  <text x="45" y="72" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="900" fill="#003399">CivicFix Baku</text>
+</svg>
