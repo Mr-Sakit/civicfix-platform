@@ -13,21 +13,16 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   interactive = true
 }) => {
   const { reports, setSelectedReportId } = useApp();
-  const [zoom, setZoom] = useState(1);
-  const [mapType, setMapType] = useState<'standard' | 'transport' | 'cycle'>('standard');
+  const [zoom, setZoom] = useState(13);
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite'>('roadmap');
 
   const selectedReport = reports.find((report) => report.id === selectedId) ?? reports[0];
   const centerLat = selectedReport?.lat ?? 40.7128;
   const centerLng = selectedReport?.lng ?? -74.0060;
-  const span = 0.08 / zoom;
-  const bbox = [
-    centerLng - span,
-    centerLat - span,
-    centerLng + span,
-    centerLat + span,
-  ].join('%2C');
-  const mapLayer = mapType === 'cycle' ? 'C' : mapType === 'transport' ? 'T' : 'M';
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=${mapLayer}&marker=${centerLat}%2C${centerLng}`;
+  const span = 1.04 / zoom;
+  const mapUrl = `https://www.google.com/maps?q=${centerLat},${centerLng}&z=${zoom}&t=${
+    mapType === 'satellite' ? 'k' : 'm'
+  }&output=embed`;
 
   const getPinPosition = (report: Report) => {
     const latRange = Math.max(span * 2, 0.0001);
@@ -66,7 +61,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   return (
     <div className="w-full h-full relative bg-surface-container overflow-hidden group">
-      {/* Real OpenStreetMap base layer */}
+      {/* Google Maps base layer */}
       <iframe
         key={mapUrl}
         title="CivicFix live neighborhood map"
@@ -123,13 +118,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       {/* Map Controls */}
       <div className="absolute bottom-lg left-lg flex flex-col gap-sm z-30">
         <button
-          onClick={() => setZoom((z) => Math.min(z + 0.25, 2.5))}
+          onClick={() => setZoom((z) => Math.min(z + 1, 18))}
           className="bg-white p-2 rounded-lg shadow-md hover:bg-surface-container-high transition-colors text-on-surface flex items-center justify-center border border-outline-variant/40"
         >
           <span className="material-symbols-outlined leading-none">add</span>
         </button>
         <button
-          onClick={() => setZoom((z) => Math.max(z - 0.25, 1))}
+          onClick={() => setZoom((z) => Math.max(z - 1, 10))}
           className="bg-white p-2 rounded-lg shadow-md hover:bg-surface-container-high transition-colors text-on-surface flex items-center justify-center border border-outline-variant/40"
         >
           <span className="material-symbols-outlined leading-none">remove</span>
@@ -140,28 +135,20 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       <div className="absolute top-lg left-lg z-30">
         <div className="bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-outline-variant/30 flex gap-xs">
           <button
-            onClick={() => setMapType('standard')}
+            onClick={() => setMapType('roadmap')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'standard' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
+              mapType === 'roadmap' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
             }`}
           >
             Street
           </button>
           <button
-            onClick={() => setMapType('transport')}
+            onClick={() => setMapType('satellite')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'transport' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
+              mapType === 'satellite' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
             }`}
           >
-            Transit
-          </button>
-          <button
-            onClick={() => setMapType('cycle')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'cycle' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
-            }`}
-          >
-            Cycle
+            Satellite
           </button>
         </div>
       </div>
