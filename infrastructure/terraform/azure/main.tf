@@ -117,6 +117,12 @@ resource "azurerm_public_ip" "ingress" {
   tags                = local.common_tags
 }
 
+resource "azurerm_role_assignment" "aks_network_contributor_resource_group" {
+  scope                = azurerm_resource_group.main.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_kubernetes_cluster.main.identity[0].principal_id
+}
+
 resource "azurerm_federated_identity_credential" "external_secrets" {
   name                      = "fic-${local.name_prefix}-external-secrets"
   audience                  = ["api://AzureADTokenExchange"]
