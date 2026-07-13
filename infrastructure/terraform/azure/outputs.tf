@@ -15,12 +15,12 @@ output "aks_node_resource_group_name" {
 
 output "ingress_public_ip_address" {
   description = "Static public IP address reserved for the Kubernetes ingress controller."
-  value       = var.create_ingress_public_ip ? azurerm_public_ip.ingress[0].ip_address : null
+  value       = try(azurerm_public_ip.ingress[0].ip_address, null)
 }
 
 output "ingress_public_ip_name" {
   description = "Static public IP resource name reserved for the Kubernetes ingress controller."
-  value       = var.create_ingress_public_ip ? azurerm_public_ip.ingress[0].name : null
+  value       = try(azurerm_public_ip.ingress[0].name, null)
 }
 
 output "aks_oidc_issuer_url" {
@@ -45,10 +45,10 @@ output "external_secrets_identity_client_id" {
 
 output "postgres_fqdn" {
   description = "Private PostgreSQL Flexible Server FQDN."
-  value       = var.create_managed_postgres ? azurerm_postgresql_flexible_server.main[0].fqdn : null
+  value       = try(azurerm_postgresql_flexible_server.main[0].fqdn, null)
 }
 
 output "container_registry_login_server" {
   description = "Optional Azure Container Registry login server."
-  value       = var.create_container_registry ? azurerm_container_registry.main[0].login_server : null
+  value       = try(azurerm_container_registry.main[0].login_server, null)
 }
