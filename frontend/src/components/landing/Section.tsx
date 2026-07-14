@@ -35,7 +35,7 @@ export const Section: React.FC<SectionProps> = ({
 }) => {
   return (
     <Tag className={`${TONE_CLASSES[tone]} ${BORDER_CLASSES[border]} ${className}`}>
-      <div className={`max-w-5xl mx-auto px-container-margin ${padY ? 'py-3xl' : ''}`}>{children}</div>
+      <div className={`max-w-5xl mx-auto px-container-margin ${padY ? 'py-section' : ''}`}>{children}</div>
     </Tag>
   );
 };

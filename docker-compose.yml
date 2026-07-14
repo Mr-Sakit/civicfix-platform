@@ -27,7 +27,7 @@ services:
       QUEUE_PROVIDER: ${QUEUE_PROVIDER:-none}
       AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       JWT_SECRET: ${JWT_SECRET:-civicfix-dev-secret-change-me}
     ports:
       - "4000:4000"
@@ -54,7 +54,7 @@ services:
       WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-5000}
       WORKER_METRICS_PORT: 9100
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
     ports:
       - "9100:9100"
     depends_on:
