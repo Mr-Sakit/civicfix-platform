@@ -12,26 +12,26 @@
     "cap:open": "npx cap open android"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.4",
-    "@capacitor/camera": "^7.0.4",
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/camera": "^8.2.1",
     "@capacitor/core": "^7.4.4",
-    "@capacitor/geolocation": "^7.1.5",
+    "@capacitor/geolocation": "^8.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.4",
+    "@capacitor/cli": "^8.4.2",
     "@tailwindcss/postcss": "^4.3.2",
     "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "^24.13.2",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
-    "autoprefixer": "^10.5.2",
-    "oxlint": "^1.71.0",
-    "postcss": "^8.5.17",
+    "autoprefixer": "^10.5.3",
+    "oxlint": "^1.74.0",
+    "postcss": "^8.5.19",
     "tailwindcss": "^4.3.2",
-    "typescript": "~6.0.2",
+    "typescript": "~7.0.2",
     "vite": "^8.1.1"
   },
   "engines": {
