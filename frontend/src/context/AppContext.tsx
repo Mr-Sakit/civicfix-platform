@@ -227,10 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('civicfix_current_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [reports, setReports] = useState<Report[]>(() => {
-    const saved = localStorage.getItem('civicfix_reports');
-    return saved ? JSON.parse(saved) : initialReports;
-  });
+  const [reports, setReports] = useState<Report[]>(initialReports);
   const initialRoute = getRouteState(window.location.pathname);
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [categories, setCategories] = useState<BackendCategory[]>([]);
@@ -256,8 +253,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    localStorage.setItem('civicfix_reports', JSON.stringify(reports));
-  }, [reports]);
+    localStorage.removeItem('civicfix_reports');
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
