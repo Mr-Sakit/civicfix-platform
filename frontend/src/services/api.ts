@@ -117,7 +117,6 @@ export const civicfixApi = {
     imageName?: string;
     userId?: number;
     watcherKey?: string;
-    forceCreate?: boolean;
   }) =>
     request<BackendIssue | DuplicateIssueResponse>('/api/issues', {
       method: 'POST',

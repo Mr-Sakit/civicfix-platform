@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MapContainer } from '../../components/MapContainer';
+import { getCurrentFix, type GpsFix } from '../../services/gps';
+import { reverseGeocode } from '../../services/geocode';
 
 export const ReportIssueWizard: React.FC = () => {
   const {
@@ -19,11 +21,13 @@ export const ReportIssueWizard: React.FC = () => {
   const [description, setDescription] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
   const [category, setCategory] = useState<'ROADS' | 'UTILITIES' | 'SANITATION' | 'GRAFFITI'>('ROADS');
-  const [coordinates, setCoordinates] = useState({ lat: 40.4093, lng: 49.8671 });
+  const [coordinates, setCoordinates] = useState<GpsFix>({ lat: 40.4093, lng: 49.8671 });
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [gpsError, setGpsError] = useState('');
+  const [isLocatingAddress, setIsLocatingAddress] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState('');
   const [submitState, setSubmitState] = useState<{
-    status: 'idle' | 'submitting' | 'created' | 'duplicate' | 'error';
+    status: 'idle' | 'submitting' | 'created' | 'duplicate' | 'mismatch' | 'error';
     message: string;
   }>({ status: 'idle', message: '' });
 
@@ -33,25 +37,25 @@ export const ReportIssueWizard: React.FC = () => {
   const [localProgress, setLocalProgress] = useState(0);
 
   const handleGPSClick = () => {
-    if (!navigator.geolocation) {
-      setGpsStatus('error');
-      return;
-    }
-
     setGpsStatus('loading');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const nextCoordinates = {
-          lat: Number(position.coords.latitude.toFixed(6)),
-          lng: Number(position.coords.longitude.toFixed(6)),
-        };
-        setCoordinates(nextCoordinates);
-        setAddress(`GPS location: ${nextCoordinates.lat}, ${nextCoordinates.lng}`);
+    setGpsError('');
+
+    getCurrentFix((liveFix) => {
+      setCoordinates(liveFix);
+      setGpsStatus('ready');
+    })
+      .then((fix) => {
+        setCoordinates(fix);
         setGpsStatus('ready');
-      },
-      () => setGpsStatus('error'),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
+        setIsLocatingAddress(true);
+        return reverseGeocode(fix.lat, fix.lng)
+          .then(setAddress)
+          .finally(() => setIsLocatingAddress(false));
+      })
+      .catch((error: Error) => {
+        setGpsStatus('error');
+        setGpsError(error.message || 'GPS permission was denied or unavailable. You can still type the location manually.');
+      });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,6 +142,12 @@ export const ReportIssueWizard: React.FC = () => {
         status: 'duplicate',
         message: `A similar report already exists about ${result.distanceMeters}m away. You were added as watcher #${result.watcherCount}.`
       });
+    } else if (result.status === 'mismatch') {
+      setSubmitState({
+        status: 'mismatch',
+        message: result.message
+      });
+      return;
     } else if (result.status === 'created') {
       setSubmitState({
         status: 'created',
@@ -288,27 +298,30 @@ export const ReportIssueWizard: React.FC = () => {
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              disabled={isLocatingAddress}
               className="w-full h-[56px] pl-12 pr-md rounded-lg border border-outline-variant bg-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-md text-body-md"
-              placeholder="Enter street address or intersection"
+              placeholder="Enter street address or intersection, or use GPS"
               type="text"
             />
           </div>
           <button
             onClick={handleGPSClick}
+            disabled={gpsStatus === 'loading' || isLocatingAddress}
             className="h-[56px] px-md rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-md text-label-md flex items-center justify-center gap-sm transition-all border border-outline-variant/20 shadow-sm active:scale-95"
           >
             <span className="material-symbols-outlined leading-none">my_location</span>
-            {gpsStatus === 'loading' ? 'Locating...' : 'Use Current GPS'}
+            {gpsStatus === 'loading' ? 'Improving accuracy...' : isLocatingAddress ? 'Finding address...' : 'Use Current GPS'}
           </button>
         </div>
         {gpsStatus === 'ready' && (
           <p className="text-xs text-secondary font-semibold">
             GPS locked: {coordinates.lat}, {coordinates.lng}
+            {coordinates.accuracy != null && ` (${Math.round(coordinates.accuracy)}m accuracy)`}
           </p>
         )}
         {gpsStatus === 'error' && (
           <p className="text-xs text-error font-semibold">
-            GPS permission was denied or unavailable. You can still type the location manually.
+            {gpsError || 'GPS permission was denied or unavailable. You can still type the location manually.'}
           </p>
         )}
 
@@ -404,7 +417,7 @@ export const ReportIssueWizard: React.FC = () => {
           <span className="material-symbols-outlined text-sm leading-none">send</span>
         </button>
       </div>
-      {submitState.status === 'error' && (
+      {(submitState.status === 'error' || submitState.status === 'mismatch') && (
         <p className="text-xs text-error font-semibold">{submitState.message}</p>
       )}
     </div>

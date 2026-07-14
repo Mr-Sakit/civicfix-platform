@@ -28,6 +28,7 @@ export interface Report {
 export type AddReportResult =
   | { status: 'created'; report: Report }
   | { status: 'duplicate'; existingReport: Report; watcherCount: number; distanceMeters: number }
+  | { status: 'mismatch'; message: string }
   | { status: 'error'; message: string };
 
 const isDuplicateIssueResponse = (value: BackendIssue | DuplicateIssueResponse): value is DuplicateIssueResponse => {
@@ -441,6 +442,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         }
       }
+
+      if (error instanceof ApiError && error.status === 422) {
+        const body = error.body as { message?: string; data?: { reason?: string } };
+        setReports((prev) => prev.filter((report) => report.id !== nextId));
+        return {
+          status: 'mismatch',
+          message: body.data?.reason
+            ? `${body.message ?? 'The uploaded photo does not match the report.'} ${body.data.reason}`
+            : body.message ?? 'The uploaded photo does not appear to match this report.',
+        };
+      }
+
       setIsApiConnected(false);
       return {
         status: 'error',
