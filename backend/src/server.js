@@ -68,7 +68,7 @@ const issueSelect = `
   JOIN issue_categories ic ON ic.id = ci.category_id
   LEFT JOIN teams ON teams.id = ci.assigned_team_id
   LEFT JOIN LATERAL (
-    SELECT file_path
+    SELECT file_path, file_name, mime_type
     FROM issue_photos
     WHERE issue_photos.issue_id = ci.id
     ORDER BY created_at ASC
