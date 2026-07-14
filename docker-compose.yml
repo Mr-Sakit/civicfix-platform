@@ -25,6 +25,8 @@ services:
       AZURE_STORAGE_BLOB_CONTAINER: ${AZURE_STORAGE_BLOB_CONTAINER:-issue-photos}
       QUEUE_PROVIDER: ${QUEUE_PROVIDER:-none}
       AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
     ports:
       - "4000:4000"
     depends_on:
@@ -49,6 +51,8 @@ services:
       AZURE_STORAGE_QUEUE_NAME: ${AZURE_STORAGE_QUEUE_NAME:-image-analysis-jobs}
       WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-5000}
       WORKER_METRICS_PORT: 9100
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
     ports:
       - "9100:9100"
     depends_on:

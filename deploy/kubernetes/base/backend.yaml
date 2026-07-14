@@ -88,11 +88,22 @@ spec:
                 configMapKeyRef:
                   name: civicfix-app-config
                   key: AZURE_STORAGE_QUEUE_NAME
+            - name: OPENAI_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: OPENAI_MODEL
             - name: AZURE_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
                   name: civicfix-app-secret
                   key: AZURE_STORAGE_CONNECTION_STRING
+                  optional: true
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: civicfix-app-secret
+                  key: OPENAI_API_KEY
                   optional: true
           readinessProbe:
             httpGet:

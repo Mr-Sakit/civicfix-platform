@@ -22,6 +22,10 @@ export const ReportIssueWizard: React.FC = () => {
   const [coordinates, setCoordinates] = useState({ lat: 40.4093, lng: 49.8671 });
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [selectedImageName, setSelectedImageName] = useState('');
+  const [submitState, setSubmitState] = useState<{
+    status: 'idle' | 'submitting' | 'created' | 'duplicate' | 'error';
+    message: string;
+  }>({ status: 'idle', message: '' });
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -105,12 +109,15 @@ export const ReportIssueWizard: React.FC = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitState.status === 'submitting') return;
+    setSubmitState({ status: 'submitting', message: 'Submitting report and checking for nearby duplicates...' });
+
     // Generate a nice title based on category & details
     const categoryTitle = category === 'ROADS' ? 'Road Issue' : category === 'UTILITIES' ? 'Utility Defect' : 'Sanitation issue';
     const finalTitle = description ? (description.length > 30 ? description.substring(0, 30) + '...' : description) : `New ${categoryTitle}`;
     
-    addReport({
+    const result = await addReport({
       title: finalTitle,
       description: description || 'No additional description provided.',
       location: address || '1200 N Lake Shore Dr, Chicago IL',
@@ -126,11 +133,30 @@ export const ReportIssueWizard: React.FC = () => {
       isUrgent: isUrgent
     });
 
+    if (result.status === 'duplicate') {
+      setSubmitState({
+        status: 'duplicate',
+        message: `A similar report already exists about ${result.distanceMeters}m away. You were added as watcher #${result.watcherCount}.`
+      });
+    } else if (result.status === 'created') {
+      setSubmitState({
+        status: 'created',
+        message: 'Your report was submitted and queued for OpenAI image review.'
+      });
+    } else {
+      setSubmitState({
+        status: 'error',
+        message: result.message
+      });
+      return;
+    }
+
     setWizardStep(3);
   };
 
   const handleFinish = () => {
     clearWizard();
+    setSubmitState({ status: 'idle', message: '' });
     setActiveTab('home');
   };
 
@@ -371,13 +397,16 @@ export const ReportIssueWizard: React.FC = () => {
         </button>
         <button
           onClick={handleSubmit}
-          disabled={!address || !description}
+          disabled={!address || !description || submitState.status === 'submitting'}
           className="px-xl py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-sm hover:opacity-90 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
         >
-          Submit Report
+          {submitState.status === 'submitting' ? 'Submitting...' : 'Submit Report'}
           <span className="material-symbols-outlined text-sm leading-none">send</span>
         </button>
       </div>
+      {submitState.status === 'error' && (
+        <p className="text-xs text-error font-semibold">{submitState.message}</p>
+      )}
     </div>
   );
 
@@ -391,20 +420,25 @@ export const ReportIssueWizard: React.FC = () => {
       </div>
       
       <div className="space-y-xs">
-        <h1 className="text-headline-lg font-headline-lg text-on-surface">Report Submitted Successfully!</h1>
+        <h1 className="text-headline-lg font-headline-lg text-on-surface">
+          {submitState.status === 'duplicate' ? 'Duplicate Report Found' : 'Report Submitted Successfully!'}
+        </h1>
         <p className="text-body-md text-on-surface-variant max-w-md mx-auto">
-          Thank you for helping us improve our city. Your report has been saved and dispatched to our review queues.
+          {submitState.message || 'Thank you for helping us improve our city. Your report has been saved and dispatched to our review queues.'}
         </p>
       </div>
 
-      <div className="bg-surface-container-low py-sm px-lg rounded-xl border border-outline-variant/30 w-fit mx-auto font-mono text-sm text-primary font-bold">
-        TICKET ID: #FIX-{Math.floor(1000 + Math.random() * 9000)}
-      </div>
+      {submitState.status !== 'duplicate' && (
+        <div className="bg-surface-container-low py-sm px-lg rounded-xl border border-outline-variant/30 w-fit mx-auto font-mono text-sm text-primary font-bold">
+          AI STATUS: QUEUED
+        </div>
+      )}
 
       <div className="pt-lg flex justify-center gap-md border-t border-outline-variant/30 max-w-md mx-auto">
         <button
           onClick={() => {
             clearWizard();
+            setSubmitState({ status: 'idle', message: '' });
             setActiveTab('activity');
           }}
           className="px-lg py-2.5 rounded-lg border border-outline text-on-surface-variant font-label-md text-label-md hover:bg-surface-variant transition-all active:scale-95"

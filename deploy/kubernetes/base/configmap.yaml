@@ -16,6 +16,7 @@ data:
   QUEUE_PROVIDER: "none"
   AZURE_STORAGE_QUEUE_NAME: "image-analysis-jobs"
   WORKER_POLL_INTERVAL_MS: "5000"
+  OPENAI_MODEL: "gpt-4.1-mini"
   POSTGRES_DB: "civicfix"
   POSTGRES_USER: "civicfix_user"
   POSTGRES_HOST: "civicfix-postgres"
