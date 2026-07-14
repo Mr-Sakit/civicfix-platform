@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { civicfixApi } from '../services/api';
+import { civicfixApi, API_BASE_URL } from '../services/api';
 import { Section } from '../components/landing/Section';
 import { SectionHeading } from '../components/landing/SectionHeading';
 import { Card } from '../components/landing/Card';
@@ -192,6 +192,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
             </Card>
           ))}
+        </div>
+      </Section>
+
+      {/* Download App */}
+      <Section tone="surface" border="both">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-xl items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-md py-1.5 rounded-full text-xs font-bold mb-md">
+              <span className="material-symbols-outlined text-sm">android</span>
+              Android App
+            </div>
+            <h2 className="text-headline-lg font-headline-lg text-on-surface mb-sm">
+              Report and Resolve Issues On the Go
+            </h2>
+            <p className="text-body-md text-on-surface-variant mb-lg">
+              The CivicFix Android app opens your camera directly for report and fix photos — no
+              gallery picker — and captures your GPS location automatically, so every report is
+              accurate and every fix is verified.
+            </p>
+            <a
+              href={`${API_BASE_URL}/downloads/civicfix.apk`}
+              download
+              className="inline-flex items-center gap-sm h-14 px-xl bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition-all"
+            >
+              <span className="material-symbols-outlined">download</span>
+              Download for Android (.apk)
+            </a>
+            <p className="text-xs text-on-surface-variant mt-sm">
+              Direct APK install — not on the Play Store yet, so you may need to enable "Install
+              unknown apps" for your browser when prompted.
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-outline-variant/30 p-lg">
+            <ul className="space-y-md">
+              {[
+                { icon: 'photo_camera', text: 'In-app camera only — reports and fix photos can’t be picked from your gallery.' },
+                { icon: 'my_location', text: 'GPS is captured automatically the moment you report an issue.' },
+                { icon: 'engineering', text: 'Crew members accept jobs and submit after-photos straight from their phone.' },
+                { icon: 'notifications_active', text: 'Push-style in-app notifications as your report moves through review, routing, and resolution.' },
+              ].map((item) => (
+                <li key={item.text} className="flex items-start gap-md">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-lg">{item.icon}</span>
+                  </div>
+                  <p className="text-body-md text-on-surface-variant">{item.text}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </Section>
 

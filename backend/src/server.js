@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
 import { observeHttpRequest, registry } from "./metrics.js";
@@ -106,13 +108,19 @@ const insertNotificationForTeam = async ({ teamId, issueId, type, message }) => 
   }
 };
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
 
+// Serves the built Android APK for the landing page's "Download App" section.
+app.use("/downloads", express.static(path.join(__dirname, "../public/downloads")));
+
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
-  ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }]
+  ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }],
+  ["crew.demo@civicfix.local", { password: "crew-demo", role: "crew" }]
 ]);
 
 const getPublicBaseUrl = (request) => {
@@ -208,6 +216,29 @@ const ensureRuntimeSchema = async () => {
   `);
   await query(`
     CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id, is_read)
+  `);
+
+  // Demo accounts — idempotent so they exist even on databases that skipped
+  // database/init/*.sql (e.g. a pre-existing volume). Passwords are handled by
+  // the demoCredentials fallback in the login route (password_hash stays null).
+  await query(`
+    INSERT INTO users (full_name, email, role_id)
+    SELECT 'CivicFix Demo Resident', 'resident.demo@civicfix.local', roles.id
+    FROM roles WHERE roles.name = 'resident'
+    ON CONFLICT (email) DO NOTHING
+  `);
+  await query(`
+    INSERT INTO users (full_name, email, role_id)
+    SELECT 'CivicFix Operations Admin', 'admin.demo@civicfix.local', roles.id
+    FROM roles WHERE roles.name = 'admin'
+    ON CONFLICT (email) DO NOTHING
+  `);
+  await query(`
+    INSERT INTO users (full_name, email, role_id, team_id)
+    SELECT 'CivicFix Demo Crew', 'crew.demo@civicfix.local', roles.id, teams.id
+    FROM roles, teams
+    WHERE roles.name = 'maintenance' AND teams.name = 'Road Maintenance'
+    ON CONFLICT (email) DO NOTHING
   `);
 };
 

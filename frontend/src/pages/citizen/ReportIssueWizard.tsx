@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MapContainer } from '../../components/MapContainer';
 import { reverseGeocode } from '../../services/geocode';
+import { isNativeApp, takePhoto } from '../../services/nativeCamera';
+import { getCurrentFix } from '../../services/nativeGeolocation';
 import type { AddReportResult } from '../../context/AppContext';
 
 export const ReportIssueWizard: React.FC = () => {
@@ -34,100 +36,39 @@ export const ReportIssueWizard: React.FC = () => {
   const [uploadFileName, setUploadFileName] = useState('');
   const [localProgress, setLocalProgress] = useState(0);
 
-  // A single getCurrentPosition() call often returns a coarse, network-based first fix.
-  // watchPosition keeps refining as the device gets a satellite lock, so we keep the best
-  // (lowest-accuracy-number) reading across a bounded window instead of taking the first one.
-  const GOOD_ENOUGH_ACCURACY_METERS = 20;
-  const MAX_GPS_WATCH_MS = 12000;
-
   const handleGPSClick = () => {
-    if (!navigator.geolocation) {
-      setGpsStatus('error');
-      setGpsError('This browser does not support GPS location.');
-      return;
-    }
-
-    if (!window.isSecureContext) {
-      setGpsStatus('error');
-      setGpsError('GPS requires a secure (HTTPS or localhost) connection — this page is not served securely.');
-      return;
-    }
-
     setGpsStatus('loading');
     setGpsError('');
     setIsRefiningGps(true);
 
-    let best: GeolocationPosition | null = null;
-    let finished = false;
-    let watchId = -1;
-
-    const applyBestFix = () => {
-      if (!best) return;
-      const nextCoordinates = {
-        lat: Number(best.coords.latitude.toFixed(6)),
-        lng: Number(best.coords.longitude.toFixed(6)),
-        accuracy: best.coords.accuracy,
-      };
-      setCoordinates(nextCoordinates);
+    getCurrentFix((liveFix) => {
+      setCoordinates(liveFix);
       setGpsStatus('ready');
-
-      setIsLocatingAddress(true);
-      reverseGeocode(nextCoordinates.lat, nextCoordinates.lng)
-        .then(setAddress)
-        .finally(() => setIsLocatingAddress(false));
-    };
-
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      if (watchId !== -1) navigator.geolocation.clearWatch(watchId);
-      clearTimeout(timeoutId);
-      setIsRefiningGps(false);
-
-      if (!best) {
+    })
+      .then((fix) => {
+        setCoordinates(fix);
+        setGpsStatus('ready');
+        setIsLocatingAddress(true);
+        return reverseGeocode(fix.lat, fix.lng)
+          .then(setAddress)
+          .finally(() => setIsLocatingAddress(false));
+      })
+      .catch((err: Error) => {
         setGpsStatus('error');
-        setGpsError('Could not get your GPS location.');
-        return;
-      }
-      applyBestFix();
-    };
-
-    const timeoutId = setTimeout(finish, MAX_GPS_WATCH_MS);
-
-    watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        if (!best || position.coords.accuracy < best.coords.accuracy) {
-          best = position;
-          setCoordinates({
-            lat: Number(position.coords.latitude.toFixed(6)),
-            lng: Number(position.coords.longitude.toFixed(6)),
-            accuracy: position.coords.accuracy,
-          });
-          setGpsStatus('ready');
-        }
-        if (position.coords.accuracy <= GOOD_ENOUGH_ACCURACY_METERS) {
-          finish();
-        }
-      },
-      (error) => {
-        if (finished || best) return; // keep whatever fix we already have on a later error
-        finished = true;
-        clearTimeout(timeoutId);
-        if (watchId !== -1) navigator.geolocation.clearWatch(watchId);
-        setGpsStatus('error');
-        if (error.code === error.PERMISSION_DENIED) {
-          setGpsError('Location permission was denied. Please allow location access and try again.');
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          setGpsError('Your location could not be determined right now. Please try again.');
-        } else if (error.code === error.TIMEOUT) {
-          setGpsError('Getting your location took too long. Please try again.');
-        } else {
-          setGpsError('Could not get your GPS location.');
-        }
-      },
-      { enableHighAccuracy: true, timeout: MAX_GPS_WATCH_MS, maximumAge: 0 }
-    );
+        setGpsError(err.message || 'Could not get your GPS location.');
+      })
+      .finally(() => setIsRefiningGps(false));
   };
+
+  // GPS must be captured automatically inside the native app — fetch a fix as soon as the
+  // location step is reached, no button tap required. The manual "Use Current GPS" button
+  // stays available as a retry affordance.
+  useEffect(() => {
+    if (wizardStep === 2 && isNativeApp() && !coordinates && gpsStatus === 'idle') {
+      handleGPSClick();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardStep]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -136,7 +77,17 @@ export const ReportIssueWizard: React.FC = () => {
     }
   };
 
-  const handleDropzoneClick = () => {
+  const handleDropzoneClick = async () => {
+    if (isNativeApp()) {
+      try {
+        const dataUrl = await takePhoto();
+        addWizardPhoto(dataUrl);
+        setSelectedImageName('camera-photo.jpg');
+      } catch {
+        // user cancelled the camera or permission was denied — nothing to upload
+      }
+      return;
+    }
     const fileInput = document.getElementById('wizard-file-input');
     if (fileInput) fileInput.click();
   };
@@ -251,11 +202,17 @@ export const ReportIssueWizard: React.FC = () => {
           onChange={handleFileUpload}
         />
         <div className="w-16 h-16 bg-primary-fixed rounded-full flex items-center justify-center group-hover:scale-110 transition-transform text-primary">
-          <span className="material-symbols-outlined text-4xl leading-none">cloud_upload</span>
+          <span className="material-symbols-outlined text-4xl leading-none">
+            {isNativeApp() ? 'photo_camera' : 'cloud_upload'}
+          </span>
         </div>
         <div className="text-center">
-          <p className="font-headline-md text-body-lg font-bold text-on-surface">Drag photos here or click to browse</p>
-          <p className="font-label-md text-label-md text-on-surface-variant mt-1">Supports JPG, PNG (Max 10MB)</p>
+          <p className="font-headline-md text-body-lg font-bold text-on-surface">
+            {isNativeApp() ? 'Tap to take a photo' : 'Drag photos here or click to browse'}
+          </p>
+          <p className="font-label-md text-label-md text-on-surface-variant mt-1">
+            {isNativeApp() ? 'Opens your camera — gallery photos aren’t accepted' : 'Supports JPG, PNG (Max 10MB)'}
+          </p>
         </div>
       </div>
 

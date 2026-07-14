@@ -13,6 +13,7 @@ import CrewDashboard from './pages/crew/CrewDashboard';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import LandingPage from './pages/LandingPage';
+import { isNativeApp } from './services/nativeCamera';
 
 const useUnauthPath = () => {
   const [path, setPath] = useState(window.location.pathname);
@@ -36,6 +37,11 @@ export const AppContent: React.FC = () => {
   const { path, navigate } = useUnauthPath();
 
   if (!isAuthenticated) {
+    // The app has no landing page — it always opens straight to sign in.
+    if (isNativeApp()) {
+      if (path.startsWith('/signup')) return <SignupPage onNavigate={navigate} />;
+      return <LoginPage onNavigate={navigate} />;
+    }
     if (path.startsWith('/signup')) return <SignupPage onNavigate={navigate} />;
     if (path.startsWith('/login')) return <LoginPage onNavigate={navigate} />;
     return <LandingPage onNavigate={navigate} />;

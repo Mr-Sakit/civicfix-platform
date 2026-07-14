@@ -130,10 +130,13 @@
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
+html, body, #root {
+  height: 100%;
+}
+
 body {
   background-color: #f3f4f6;
   -webkit-tap-highlight-color: transparent;
-  min-height: max(884px, 100dvh);
 }
 
 .glass-card {

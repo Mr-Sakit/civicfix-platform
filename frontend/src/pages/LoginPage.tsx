@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { isNativeApp } from '../services/nativeCamera';
 
 interface LoginPageProps {
   onNavigate?: (path: string) => void;
@@ -7,6 +8,7 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const { login } = useApp();
+  const isNative = isNativeApp();
   const [email, setEmail] = useState('resident.demo@civicfix.local');
   const [password, setPassword] = useState('resident-demo');
   const [error, setError] = useState('');
@@ -26,14 +28,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const applyDemoCredentials = (role: 'citizen' | 'admin') => {
-    if (role === 'admin') {
-      setEmail('admin.demo@civicfix.local');
-      setPassword('admin-demo');
-    } else {
-      setEmail('resident.demo@civicfix.local');
-      setPassword('resident-demo');
-    }
+  const DEMO_ACCOUNTS: Array<{ label: string; email: string; password: string }> = [
+    { label: 'Citizen demo', email: 'resident.demo@civicfix.local', password: 'resident-demo' },
+    { label: 'Crew demo', email: 'crew.demo@civicfix.local', password: 'crew-demo' },
+    // Admin isn't part of the mobile app's scope, so it's web-only.
+    ...(isNative ? [] : [{ label: 'Manager demo', email: 'admin.demo@civicfix.local', password: 'admin-demo' }]),
+  ];
+
+  const applyDemoCredentials = (account: { email: string; password: string }) => {
+    setEmail(account.email);
+    setPassword(account.password);
   };
 
   return (
@@ -92,14 +96,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           </button>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
-            <button type="button" onClick={() => applyDemoCredentials('citizen')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
-              <div className="font-bold text-on-surface">Citizen demo</div>
-              <div className="text-xs text-on-surface-variant">resident.demo@civicfix.local</div>
-            </button>
-            <button type="button" onClick={() => applyDemoCredentials('admin')} className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container">
-              <div className="font-bold text-on-surface">Manager demo</div>
-              <div className="text-xs text-on-surface-variant">admin.demo@civicfix.local</div>
-            </button>
+            {DEMO_ACCOUNTS.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => applyDemoCredentials(account)}
+                className="rounded-xl border border-outline-variant p-md text-left hover:bg-surface-container"
+              >
+                <div className="font-bold text-on-surface">{account.label}</div>
+                <div className="text-xs text-on-surface-variant">{account.email}</div>
+              </button>
+            ))}
           </div>
         </form>
       </section>

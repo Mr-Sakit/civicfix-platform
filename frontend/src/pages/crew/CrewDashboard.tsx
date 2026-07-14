@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../../components/StatusBadge';
+import { isNativeApp, takePhoto } from '../../services/nativeCamera';
 
 type LogTone = 'info' | 'success' | 'error';
 interface LogEntry {
@@ -65,6 +66,17 @@ export const CrewDashboard: React.FC = () => {
       addLog(`Photo "${file.name}" selected — ready to submit.`);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleTakeAfterPhoto = async () => {
+    try {
+      const dataUrl = await takePhoto();
+      setAfterPhotoName('camera-photo.jpg');
+      setAfterPhoto(dataUrl);
+      addLog('After-photo captured — ready to submit.');
+    } catch {
+      // user cancelled the camera or permission was denied
+    }
   };
 
   const handleResolveSubmit = async (id: string) => {
@@ -183,7 +195,17 @@ export const CrewDashboard: React.FC = () => {
 
                   {report.status === 'crew_accepted' && resolvingId === report.id && (
                     <div className="space-y-sm border-t border-outline-variant/20 pt-sm mt-sm">
-                      <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFileSelect} className="text-xs" />
+                      {isNativeApp() ? (
+                        <button
+                          onClick={handleTakeAfterPhoto}
+                          className="px-lg h-9 rounded-lg border border-outline-variant text-xs font-bold flex items-center gap-2 hover:bg-surface-variant transition-all"
+                        >
+                          <span className="material-symbols-outlined text-sm leading-none">photo_camera</span>
+                          {afterPhoto ? 'Retake Photo' : 'Take After-Photo'}
+                        </button>
+                      ) : (
+                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFileSelect} className="text-xs" />
+                      )}
                       {afterPhoto && (
                         <img src={afterPhoto} alt="After preview" className="w-32 h-24 object-cover rounded-lg border border-outline-variant/30" />
                       )}
