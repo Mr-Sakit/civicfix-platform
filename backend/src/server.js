@@ -116,6 +116,16 @@ const decodeIssueImageDataUrl = (imageDataUrl) => {
   return { mimeType, buffer };
 };
 
+const getRequiredString = (value, fieldName) => {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    const error = new Error(`${fieldName} is required`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return text;
+};
+
 const lookupCategoryId = async (categoryName, fallbackCategoryId) => {
   const result = await query("SELECT id FROM issue_categories WHERE name = $1", [categoryName]);
   return result.rows[0]?.id ?? fallbackCategoryId;
@@ -602,7 +612,7 @@ app.get("/api/issues", async (_request, response, next) => {
       LIMIT 25
     `);
 
-    response.json({ data: result.rows });
+    response.json({ data: result.rows.map(toPublicIssue) });
   } catch (error) {
     next(error);
   }
@@ -610,14 +620,10 @@ app.get("/api/issues", async (_request, response, next) => {
 
 app.post("/api/issues", limitReportCreation, async (request, response, next) => {
   try {
-    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey } =
+    const { categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey } =
       request.body;
-
-    if (!title || !description) {
-      return response.status(400).json({
-        message: "title and description are required"
-      });
-    }
+    const title = getRequiredString(request.body.title, "title");
+    const description = getRequiredString(request.body.description, "description");
 
     const fallbackCategoryId = Number.isInteger(Number(categoryId)) ? Number(categoryId) : null;
     const decodedImage = decodeIssueImageDataUrl(imageDataUrl);
