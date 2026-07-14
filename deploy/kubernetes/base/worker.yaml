@@ -67,6 +67,16 @@ spec:
                 configMapKeyRef:
                   name: civicfix-app-config
                   key: QUEUE_PROVIDER
+            - name: STORAGE_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: STORAGE_PROVIDER
+            - name: AZURE_STORAGE_BLOB_CONTAINER
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: AZURE_STORAGE_BLOB_CONTAINER
             - name: AZURE_STORAGE_QUEUE_NAME
               valueFrom:
                 configMapKeyRef:
