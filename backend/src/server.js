@@ -6,6 +6,7 @@ import { sendStoredImage } from "./imageResponse.js";
 import { aiQueueEnqueueTotal, observeHttpRequest, registry } from "./metrics.js";
 import { enqueueImageAnalysisJob, ensureQueueReady } from "./queue.js";
 import { ensureStorageReady, loadImageObject, saveImageObject } from "./storage.js";
+import { analyzeIssueImage, verifyIssuePhoto } from "./aiAnalyzer.js";
 
 const app = express();
 
@@ -22,6 +23,186 @@ const getPublicBaseUrl = (request) => {
   const forwardedProto = request.get("x-forwarded-proto");
   const protocol = forwardedProto ?? request.protocol;
   return `${protocol}://${request.get("host")}`;
+};
+
+const issueSelect = `
+  SELECT
+    ci.id,
+    ci.title,
+    ci.description,
+    ci.status,
+    ci.priority,
+    ci.address,
+    ci.latitude,
+    ci.longitude,
+    ci.created_at,
+    ci.updated_at,
+    ci.ai_status,
+    ci.ai_category,
+    ci.ai_severity,
+    ci.ai_confidence,
+    ci.ai_summary,
+    ci.ai_processed_at,
+    ci.ai_photo_match,
+    ci.ai_photo_match_confidence,
+    ci.duplicate_of,
+    ic.name AS category,
+    teams.id AS assigned_team_id,
+    teams.name AS assigned_team,
+    photos.file_path AS image_url,
+    COALESCE(watchers.watcher_count, 0) AS watcher_count
+  FROM civic_issues ci
+  JOIN issue_categories ic ON ic.id = ci.category_id
+  LEFT JOIN teams ON teams.id = ci.assigned_team_id
+  LEFT JOIN LATERAL (
+    SELECT file_path
+    FROM issue_photos
+    WHERE issue_photos.issue_id = ci.id
+    ORDER BY created_at ASC
+    LIMIT 1
+  ) photos ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*)::int AS watcher_count
+    FROM issue_watchers
+    WHERE issue_watchers.issue_id = ci.id
+  ) watchers ON TRUE
+`;
+
+const earthRadiusMeters = 6371000;
+const toRadians = (degrees) => (degrees * Math.PI) / 180;
+const distanceMeters = (latA, lngA, latB, lngB) => {
+  const dLat = toRadians(latB - latA);
+  const dLng = toRadians(lngB - lngA);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(latA)) * Math.cos(toRadians(latB)) * Math.sin(dLng / 2) ** 2;
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const makeWatcherKey = ({ userId, watcherKey }) => {
+  if (Number.isInteger(Number(userId))) return `user:${Number(userId)}`;
+  return `anon:${String(watcherKey ?? "demo-session").slice(0, 80)}`;
+};
+
+const fetchIssueById = async (issueId) => {
+  const result = await query(`${issueSelect} WHERE ci.id = $1`, [issueId]);
+  return result.rows[0] ?? null;
+};
+
+const addNotification = async ({ userId = null, recipientRole = null, issueId = null, type, message }) => {
+  await query(
+    `
+      INSERT INTO notifications (user_id, recipient_role, issue_id, type, message)
+      VALUES ($1, $2, $3, $4, $5)
+    `,
+    [userId, recipientRole, issueId, type, message]
+  );
+};
+
+const addWatcher = async ({ issueId, userId, watcherKey }) => {
+  const key = makeWatcherKey({ userId, watcherKey });
+  const result = await query(
+    `
+      INSERT INTO issue_watchers (issue_id, user_id, watcher_key)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (issue_id, watcher_key) DO NOTHING
+      RETURNING id
+    `,
+    [issueId, Number.isInteger(Number(userId)) ? Number(userId) : null, key]
+  );
+  const count = await query(
+    "SELECT COUNT(*)::int AS count FROM issue_watchers WHERE issue_id = $1",
+    [issueId]
+  );
+
+  return {
+    added: result.rowCount > 0,
+    watcherCount: count.rows[0].count
+  };
+};
+
+const findDuplicateIssue = async ({ categoryId, latitude, longitude }) => {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const candidates = await query(
+    `
+      ${issueSelect}
+      WHERE ci.status <> 'resolved'
+        AND ci.category_id = $1
+        AND ci.latitude BETWEEN $2 AND $3
+        AND ci.longitude BETWEEN $4 AND $5
+      ORDER BY ci.created_at DESC
+      LIMIT 20
+    `,
+    [categoryId, lat - 0.003, lat + 0.003, lng - 0.003, lng + 0.003]
+  );
+
+  return (
+    candidates.rows
+      .map((issue) => ({
+        issue,
+        distance: distanceMeters(lat, lng, Number(issue.latitude), Number(issue.longitude))
+      }))
+      .filter((candidate) => candidate.distance <= 150)
+      .sort((a, b) => a.distance - b.distance)[0] ?? null
+  );
+};
+
+const analyzeIssueInline = async ({ issueId, title, description, imageName, savedPhoto }) => {
+  if (!savedPhoto) return;
+
+  await query(
+    `
+      UPDATE civic_issues
+      SET ai_status = 'processing',
+          updated_at = NOW()
+      WHERE id = $1
+    `,
+    [issueId]
+  );
+
+  const imageDataUrl = `data:${savedPhoto.mimeType};base64,${savedPhoto.buffer.toString("base64")}`;
+  const [analysis, verification] = await Promise.all([
+    analyzeIssueImage({ title, description, imageName, imageDataUrl }),
+    verifyIssuePhoto({ title, description, imageDataUrl })
+  ]);
+  const category = await query("SELECT id FROM issue_categories WHERE name = $1", [
+    analysis.category
+  ]);
+
+  await query(
+    `
+      UPDATE civic_issues
+      SET ai_status = 'completed',
+          ai_category = $1::varchar,
+          ai_severity = $2::varchar,
+          ai_confidence = $3::numeric,
+          ai_summary = $4,
+          ai_photo_match = $5::boolean,
+          ai_photo_match_confidence = $6::numeric,
+          category_id = COALESCE($7::integer, category_id),
+          priority = CASE
+            WHEN $2::varchar = 'critical' THEN 'critical'
+            WHEN $2::varchar = 'high' THEN 'high'
+            ELSE priority
+          END,
+          ai_processed_at = NOW(),
+          updated_at = NOW()
+      WHERE id = $8
+    `,
+    [
+      analysis.category,
+      analysis.severity,
+      analysis.confidence,
+      `${analysis.summary} Photo verification: ${verification.reason}`,
+      verification.matches,
+      verification.confidence,
+      category.rows[0]?.id ?? null,
+      issueId
+    ]
+  );
 };
 
 const ensureRuntimeSchema = async () => {
@@ -44,7 +225,68 @@ const ensureRuntimeSchema = async () => {
       ADD COLUMN IF NOT EXISTS ai_severity VARCHAR(40),
       ADD COLUMN IF NOT EXISTS ai_confidence NUMERIC(5, 4),
       ADD COLUMN IF NOT EXISTS ai_summary TEXT,
-      ADD COLUMN IF NOT EXISTS ai_processed_at TIMESTAMPTZ
+      ADD COLUMN IF NOT EXISTS ai_processed_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS ai_photo_match BOOLEAN,
+      ADD COLUMN IF NOT EXISTS ai_photo_match_confidence NUMERIC(5, 4),
+      ADD COLUMN IF NOT EXISTS duplicate_of INTEGER REFERENCES civic_issues(id)
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS issue_watchers (
+      id SERIAL PRIMARY KEY,
+      issue_id INTEGER NOT NULL REFERENCES civic_issues(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      watcher_key VARCHAR(120) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (issue_id, watcher_key)
+    )
+  `);
+  await query(`
+    ALTER TABLE issue_watchers
+      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS watcher_key VARCHAR(120)
+  `);
+  await query(`
+    UPDATE issue_watchers
+    SET watcher_key = COALESCE(watcher_key, CONCAT('legacy:', id::varchar))
+    WHERE watcher_key IS NULL
+  `);
+  await query(`
+    ALTER TABLE issue_watchers
+      ALTER COLUMN watcher_key SET NOT NULL
+  `);
+  await query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_issue_watchers_issue_key
+    ON issue_watchers (issue_id, watcher_key)
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      recipient_role VARCHAR(40),
+      issue_id INTEGER REFERENCES civic_issues(id) ON DELETE CASCADE,
+      type VARCHAR(80) NOT NULL,
+      message TEXT NOT NULL,
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`
+    ALTER TABLE notifications
+      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      ADD COLUMN IF NOT EXISTS recipient_role VARCHAR(40),
+      ADD COLUMN IF NOT EXISTS issue_id INTEGER REFERENCES civic_issues(id) ON DELETE CASCADE,
+      ADD COLUMN IF NOT EXISTS type VARCHAR(80) NOT NULL DEFAULT 'general',
+      ADD COLUMN IF NOT EXISTS message TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  `);
+  await query(`
+    ALTER TABLE notifications
+      ALTER COLUMN user_id DROP NOT NULL
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_role_read
+    ON notifications (user_id, recipient_role, is_read)
   `);
   await query(`
     INSERT INTO users (full_name, email, role_id)
@@ -93,7 +335,7 @@ const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => 
     [issueId, fileName, publicUrl, mimeType]
   );
 
-  return publicUrl;
+  return { publicUrl, fileName, mimeType, buffer };
 };
 
 app.get("/health", async (_request, response) => {
@@ -130,6 +372,9 @@ app.get("/api", (_request, response) => {
       "/health",
       "/api/auth/login",
       "/api/issues",
+      "/api/issues/:id/watch",
+      "/api/notifications",
+      "/api/notifications/mark-all-read",
       "/api/teams",
       "/api/issues/:id/status",
       "/api/issues/:id/assignment",
@@ -202,7 +447,7 @@ app.get("/api/teams", async (_request, response, next) => {
 
 app.get("/api/metrics/summary", async (_request, response, next) => {
   try {
-    const [totalIssues, byStatus, byCategory, byTeam] = await Promise.all([
+    const [totalIssues, byStatus, byCategory, byTeam, totalWatchers] = await Promise.all([
       query("SELECT COUNT(*)::int AS count FROM civic_issues"),
       query(`
         SELECT status, COUNT(*)::int AS count
@@ -223,7 +468,8 @@ app.get("/api/metrics/summary", async (_request, response, next) => {
         LEFT JOIN teams ON teams.id = civic_issues.assigned_team_id
         GROUP BY COALESCE(teams.name, 'Unassigned')
         ORDER BY name
-      `)
+      `),
+      query("SELECT COUNT(*)::int AS count FROM issue_watchers")
     ]);
 
     response.json({
@@ -231,7 +477,8 @@ app.get("/api/metrics/summary", async (_request, response, next) => {
         totalIssues: totalIssues.rows[0].count,
         byStatus: byStatus.rows,
         byCategory: byCategory.rows,
-        byTeam: byTeam.rows
+        byTeam: byTeam.rows,
+        totalWatchers: totalWatchers.rows[0].count
       }
     });
   } catch (error) {
@@ -285,37 +532,7 @@ app.get("/metrics", async (_request, response, next) => {
 app.get("/api/issues", async (_request, response, next) => {
   try {
     const result = await query(`
-      SELECT
-        ci.id,
-        ci.title,
-        ci.description,
-        ci.status,
-        ci.priority,
-        ci.address,
-        ci.latitude,
-        ci.longitude,
-        ci.created_at,
-        ci.updated_at,
-        ci.ai_status,
-        ci.ai_category,
-        ci.ai_severity,
-        ci.ai_confidence,
-        ci.ai_summary,
-        ci.ai_processed_at,
-        ic.name AS category,
-        teams.id AS assigned_team_id,
-        teams.name AS assigned_team,
-        photos.file_path AS image_url
-      FROM civic_issues ci
-      JOIN issue_categories ic ON ic.id = ci.category_id
-      LEFT JOIN teams ON teams.id = ci.assigned_team_id
-      LEFT JOIN LATERAL (
-        SELECT file_path
-        FROM issue_photos
-        WHERE issue_photos.issue_id = ci.id
-        ORDER BY created_at ASC
-        LIMIT 1
-      ) photos ON TRUE
+      ${issueSelect}
       ORDER BY ci.created_at DESC
       LIMIT 25
     `);
@@ -328,7 +545,7 @@ app.get("/api/issues", async (_request, response, next) => {
 
 app.post("/api/issues", async (request, response, next) => {
   try {
-    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName } =
+    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey, forceCreate } =
       request.body;
 
     if (!title || !description || !categoryId) {
@@ -337,27 +554,65 @@ app.post("/api/issues", async (request, response, next) => {
       });
     }
 
+    const duplicate = forceCreate
+      ? null
+      : await findDuplicateIssue({ categoryId, latitude, longitude });
+
+    if (duplicate) {
+      const watcher = await addWatcher({
+        issueId: duplicate.issue.id,
+        userId,
+        watcherKey
+      });
+      await addNotification({
+        userId,
+        issueId: duplicate.issue.id,
+        type: "duplicate_detected",
+        message: `A similar report already exists nearby, so you were added as watcher #${watcher.watcherCount}.`
+      });
+
+      return response.status(409).json({
+        data: {
+          duplicate: true,
+          issue: {
+            ...duplicate.issue,
+            watcher_count: watcher.watcherCount
+          },
+          distanceMeters: Math.round(duplicate.distance),
+          watcherCount: watcher.watcherCount,
+          alreadyWatching: !watcher.added
+        }
+      });
+    }
+
     const result = await query(
       `
         INSERT INTO civic_issues
-          (title, description, category_id, address, latitude, longitude)
+          (title, description, category_id, address, latitude, longitude, reported_by)
         VALUES
-          ($1, $2, $3, $4, $5, $6)
+          ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id, title, description, status, priority, address, latitude, longitude, assigned_team_id, created_at, updated_at
       `,
-      [title, description, categoryId, address, latitude, longitude]
+      [title, description, categoryId, address, latitude, longitude, Number.isInteger(Number(userId)) ? Number(userId) : null]
     );
 
-    const photoUrl = await saveIssuePhoto({
+    await addWatcher({
+      issueId: result.rows[0].id,
+      userId,
+      watcherKey
+    });
+
+    const savedPhoto = await saveIssuePhoto({
       issueId: result.rows[0].id,
       imageDataUrl,
       imageName
     }, request);
 
-    if (photoUrl) {
+    if (savedPhoto) {
       const queueResult = await enqueueImageAnalysisJob({
         issueId: result.rows[0].id,
-        imageUrl: photoUrl,
+        imageUrl: savedPhoto.publicUrl,
+        imageFileName: savedPhoto.fileName,
         imageName,
         requestedAt: new Date().toISOString()
       });
@@ -374,48 +629,33 @@ app.post("/api/issues", async (request, response, next) => {
         `,
         [queueResult.enqueued ? "pending" : "not_requested", result.rows[0].id]
       );
+
+      if (!queueResult.enqueued) {
+        await analyzeIssueInline({
+          issueId: result.rows[0].id,
+          title,
+          description,
+          imageName,
+          savedPhoto
+        });
+      }
     }
 
-    const createdIssue = await query(
-      `
-        SELECT
-          ci.id,
-          ci.title,
-          ci.description,
-          ci.status,
-          ci.priority,
-          ci.address,
-          ci.latitude,
-          ci.longitude,
-          ci.created_at,
-          ci.updated_at,
-          ci.ai_status,
-          ci.ai_category,
-          ci.ai_severity,
-          ci.ai_confidence,
-          ci.ai_summary,
-          ci.ai_processed_at,
-          ic.name AS category,
-          teams.id AS assigned_team_id,
-          teams.name AS assigned_team,
-          photos.file_path AS image_url
-        FROM civic_issues ci
-        JOIN issue_categories ic ON ic.id = ci.category_id
-        LEFT JOIN teams ON teams.id = ci.assigned_team_id
-        LEFT JOIN LATERAL (
-          SELECT file_path
-          FROM issue_photos
-          WHERE issue_photos.issue_id = ci.id
-          ORDER BY created_at ASC
-          LIMIT 1
-        ) photos ON TRUE
-        WHERE ci.id = $1
-      `,
-      [result.rows[0].id]
-    );
+    await addNotification({
+      userId,
+      issueId: result.rows[0].id,
+      type: "report_submitted",
+      message: `Your report "${title}" was submitted and queued for AI review.`
+    });
+    await addNotification({
+      recipientRole: "admin",
+      issueId: result.rows[0].id,
+      type: "new_report",
+      message: `New citizen report: "${title}".`
+    });
 
     response.status(201).json({
-      data: createdIssue.rows[0]
+      data: await fetchIssueById(result.rows[0].id)
     });
   } catch (error) {
     next(error);
@@ -470,10 +710,52 @@ app.patch("/api/issues/:id/assignment", async (request, response, next) => {
       ]
     );
 
+    await addNotification({
+      recipientRole: "citizen",
+      issueId,
+      type: "issue_assigned",
+      message: `Report "${updatedIssue.rows[0].title}" was assigned to ${team.rows[0].name}.`
+    });
+
     response.json({
       data: {
         ...updatedIssue.rows[0],
         assigned_team: team.rows[0].name
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch("/api/issues/:id/watch", async (request, response, next) => {
+  try {
+    const issueId = Number(request.params.id);
+    const { userId, watcherKey } = request.body;
+
+    if (!Number.isInteger(issueId)) {
+      return response.status(400).json({ message: "A valid issue id is required" });
+    }
+
+    const issue = await fetchIssueById(issueId);
+    if (!issue) {
+      return response.status(404).json({ message: "Issue not found" });
+    }
+
+    const watcher = await addWatcher({ issueId, userId, watcherKey });
+    await addNotification({
+      userId,
+      issueId,
+      type: "watching_report",
+      message: watcher.added
+        ? `You are now watching "${issue.title}".`
+        : `You were already watching "${issue.title}".`
+    });
+
+    response.json({
+      data: {
+        watcherCount: watcher.watcherCount,
+        alreadyWatching: !watcher.added
       }
     });
   } catch (error) {
@@ -560,7 +842,64 @@ app.patch("/api/issues/:id/status", async (request, response, next) => {
       [issueId, oldStatus, status, note ?? null]
     );
 
+    await addNotification({
+      recipientRole: "citizen",
+      issueId,
+      type: "status_changed",
+      message: `Report status changed from ${oldStatus} to ${status}.`
+    });
+
     response.json({ data: updatedIssue.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/notifications", async (request, response, next) => {
+  try {
+    const userId = Number(request.query.userId);
+    const role = String(request.query.role ?? "");
+
+    const result = await query(
+      `
+        SELECT id, user_id, recipient_role, issue_id, type, message, is_read, created_at
+        FROM notifications
+        WHERE ($1::integer IS NOT NULL AND user_id = $1)
+           OR ($2::varchar <> '' AND recipient_role = $2)
+        ORDER BY created_at DESC
+        LIMIT 25
+      `,
+      [Number.isInteger(userId) ? userId : null, role]
+    );
+    const unread = result.rows.filter((item) => !item.is_read).length;
+
+    response.json({
+      data: {
+        notifications: result.rows,
+        unreadCount: unread
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch("/api/notifications/mark-all-read", async (request, response, next) => {
+  try {
+    const userId = Number(request.body.userId);
+    const role = String(request.body.role ?? "");
+
+    await query(
+      `
+        UPDATE notifications
+        SET is_read = TRUE
+        WHERE ($1::integer IS NOT NULL AND user_id = $1)
+           OR ($2::varchar <> '' AND recipient_role = $2)
+      `,
+      [Number.isInteger(userId) ? userId : null, role]
+    );
+
+    response.json({ data: { success: true } });
   } catch (error) {
     next(error);
   }

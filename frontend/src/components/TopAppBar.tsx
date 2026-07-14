@@ -2,7 +2,16 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const TopAppBar: React.FC = () => {
-  const { currentUser, userRole, logout, activeTab, setActiveTab } = useApp();
+  const {
+    currentUser,
+    userRole,
+    logout,
+    activeTab,
+    setActiveTab,
+    notifications,
+    unreadNotificationCount,
+    markAllNotificationsRead
+  } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
@@ -88,7 +97,11 @@ export const TopAppBar: React.FC = () => {
             className="hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full p-2 transition-all relative"
           >
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border border-white"></span>
+            {unreadNotificationCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-5 h-5 px-1 bg-error text-white rounded-full border border-white text-[10px] font-bold flex items-center justify-center">
+                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+              </span>
+            )}
           </button>
           
           <button
@@ -106,19 +119,27 @@ export const TopAppBar: React.FC = () => {
             <div className="absolute right-0 top-12 w-80 bg-white border border-outline-variant shadow-lg rounded-xl overflow-hidden z-[60] py-2 animate-fade-in">
               <div className="px-md py-sm border-b border-outline-variant/30 flex justify-between items-center">
                 <span className="font-bold text-sm">Notifications</span>
-                <span className="text-xs text-primary font-semibold cursor-pointer hover:underline">Mark all read</span>
+                <button
+                  onClick={markAllNotificationsRead}
+                  className="text-xs text-primary font-semibold cursor-pointer hover:underline"
+                >
+                  Mark all read
+                </button>
               </div>
               <div className="divide-y divide-outline-variant/10 max-h-64 overflow-y-auto">
-                <div className="p-md hover:bg-surface-container-low cursor-pointer transition-colors">
-                  <p className="text-xs font-semibold text-primary">Street Light Fixed</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">Oak Street Corridor is resolved.</p>
-                  <p className="text-[10px] text-outline mt-1">15 mins ago</p>
-                </div>
-                <div className="p-md hover:bg-surface-container-low cursor-pointer transition-colors">
-                  <p className="text-xs font-semibold text-error">New Urgent Report</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">Water Main Leak reported at 5th and Broadway.</p>
-                  <p className="text-[10px] text-outline mt-1">1 hour ago</p>
-                </div>
+                {notifications.length === 0 ? (
+                  <div className="p-md text-xs text-on-surface-variant">No notifications yet.</div>
+                ) : (
+                  notifications.map((item) => (
+                    <div key={item.id} className="p-md hover:bg-surface-container-low cursor-pointer transition-colors">
+                      <p className={`text-xs font-semibold ${item.is_read ? 'text-on-surface-variant' : 'text-primary'}`}>
+                        {item.type.replaceAll('_', ' ')}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-0.5">{item.message}</p>
+                      <p className="text-[10px] text-outline mt-1">{new Date(item.created_at).toLocaleString()}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

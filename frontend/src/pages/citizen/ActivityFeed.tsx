@@ -3,7 +3,7 @@ import { useApp, type Report } from '../../context/AppContext';
 import { StatusBadge } from '../../components/StatusBadge';
 
 export const ActivityFeed: React.FC = () => {
-  const { reports } = useApp();
+  const { reports, watchReport } = useApp();
   const [filter, setFilter] = useState<'all' | 'nearby' | 'my-reports'>('all');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
@@ -116,6 +116,10 @@ export const ActivityFeed: React.FC = () => {
                     <h3 className="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">
                       {report.title}
                     </h3>
+                    <div className="flex items-center gap-1 text-primary font-bold text-sm shrink-0">
+                      <span className="material-symbols-outlined text-[18px]">visibility</span>
+                      <span>{report.watcherCount ?? 0}</span>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-xs text-on-surface-variant font-label-md text-label-md mb-md">
@@ -198,6 +202,16 @@ export const ActivityFeed: React.FC = () => {
                 </div>
               </div>
 
+              {selectedReport.aiSummary && (
+                <div className="p-sm bg-primary/5 rounded-lg flex items-start gap-sm border border-primary/20">
+                  <span className="material-symbols-outlined text-primary text-lg">auto_awesome</span>
+                  <div className="text-xs">
+                    <span className="font-semibold text-primary">AI review: </span>
+                    <span className="text-on-surface-variant">{selectedReport.aiSummary}</span>
+                  </div>
+                </div>
+              )}
+
               {selectedReport.assignedTo !== 'Unassigned' && (
                 <div className="p-sm bg-secondary-container/20 rounded-lg flex items-center gap-sm border border-secondary-container/30">
                   <span className="material-symbols-outlined text-secondary">engineering</span>
@@ -210,6 +224,13 @@ export const ActivityFeed: React.FC = () => {
             </div>
 
             <div className="p-md bg-surface-container-low border-t border-outline-variant flex justify-end shrink-0">
+              <button
+                onClick={() => void watchReport(selectedReport.id)}
+                className="px-lg h-[40px] rounded-lg border border-outline text-primary font-label-md text-label-md hover:bg-white transition-all mr-sm flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">visibility</span>
+                Watch ({selectedReport.watcherCount ?? 0})
+              </button>
               <button
                 onClick={() => setSelectedReport(null)}
                 className="px-lg h-[40px] rounded-lg bg-primary text-white font-label-md text-label-md hover:bg-primary-container shadow-md transition-all"
