@@ -11,6 +11,7 @@ import { analyzeIssueImage, compareIssuePhotos, verifyIssuePhoto } from "./aiAna
 
 const app = express();
 
+app.set("trust proxy", 1);
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
