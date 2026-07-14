@@ -27,6 +27,8 @@ The image assets live in:
 
 - `frontend/public/demo-images/`
 
+For Azure/prod demos, upload the same files to the `issue-photos` Blob container. The seed stores image paths as `/api/photos/<file>.png`, so the backend storage provider can serve the images from Azure Blob Storage.
+
 Apply to the production in-cluster PostgreSQL database:
 
 ```powershell

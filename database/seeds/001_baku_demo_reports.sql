@@ -248,12 +248,12 @@ SELECT
     WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN 'baku-narimanov-graffiti.png'
   END,
   CASE civic_issues.title
-    WHEN 'Pothole on Tbilisi Avenue near 20 Yanvar' THEN '/demo-images/baku-pothole.png'
-    WHEN 'Streetlight outage along Baku Boulevard' THEN '/demo-images/baku-boulevard-lighting.png'
-    WHEN 'Overflowing bins near Nizami Street' THEN '/demo-images/baku-nizami-waste.png'
-    WHEN 'Water leak near Icherisheher metro' THEN '/demo-images/baku-icherisheher-water.png'
-    WHEN 'Damaged sidewalk ramp at Ganjlik Mall crossing' THEN '/demo-images/baku-ganjlik-ramp.png'
-    WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN '/demo-images/baku-narimanov-graffiti.png'
+    WHEN 'Pothole on Tbilisi Avenue near 20 Yanvar' THEN '/api/photos/baku-pothole.png'
+    WHEN 'Streetlight outage along Baku Boulevard' THEN '/api/photos/baku-boulevard-lighting.png'
+    WHEN 'Overflowing bins near Nizami Street' THEN '/api/photos/baku-nizami-waste.png'
+    WHEN 'Water leak near Icherisheher metro' THEN '/api/photos/baku-icherisheher-water.png'
+    WHEN 'Damaged sidewalk ramp at Ganjlik Mall crossing' THEN '/api/photos/baku-ganjlik-ramp.png'
+    WHEN 'Graffiti on underpass wall near Nariman Narimanov' THEN '/api/photos/baku-narimanov-graffiti.png'
   END,
   'image/png'
 FROM civic_issues
