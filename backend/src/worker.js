@@ -1,9 +1,10 @@
 import { config } from "./config.js";
 import { query } from "./db.js";
-import { analyzeIssueImage } from "./aiAnalyzer.js";
+import { analyzeIssueImage, verifyIssuePhoto } from "./aiAnalyzer.js";
 import { createServer } from "node:http";
 import { aiJobDuration, aiJobsTotal, registry } from "./metrics.js";
 import { ensureQueueReady, receiveImageAnalysisJob } from "./queue.js";
+import { loadImageObject } from "./storage.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -23,7 +24,7 @@ const updateIssueAsFailed = async (issueId, error) => {
 
 const processJob = async (job) => {
   const end = aiJobDuration.startTimer({ provider: config.queue.provider });
-  const { issueId, imageUrl, imageName } = job.payload;
+  const { issueId, imageFileName, imageName } = job.payload;
 
   try {
     if (!Number.isInteger(Number(issueId))) {
@@ -53,12 +54,38 @@ const processJob = async (job) => {
       throw new Error(`Issue ${issueId} no longer exists`);
     }
 
+    const photo = await query(
+      `
+        SELECT file_name, mime_type
+        FROM issue_photos
+        WHERE issue_id = $1 AND file_name = $2
+        LIMIT 1
+      `,
+      [issueId, imageFileName]
+    );
+
+    if (photo.rowCount === 0) {
+      throw new Error(`Issue ${issueId} photo ${imageFileName} was not found`);
+    }
+
+    const image = await loadImageObject(photo.rows[0].file_name);
+    const imageDataUrl = `data:${photo.rows[0].mime_type};base64,${image.toString("base64")}`;
+
     const analysis = await analyzeIssueImage({
       title: issue.rows[0].title,
       description: issue.rows[0].description,
       imageName,
-      imageUrl
+      imageDataUrl
     });
+    const verification = await verifyIssuePhoto({
+      title: issue.rows[0].title,
+      description: issue.rows[0].description,
+      imageDataUrl
+    });
+
+    const category = await query("SELECT id FROM issue_categories WHERE name = $1", [
+      analysis.category
+    ]);
 
     await query(
       `
@@ -68,6 +95,9 @@ const processJob = async (job) => {
             ai_severity = $2::varchar,
             ai_confidence = $3::numeric,
             ai_summary = $4,
+            ai_photo_match = $5::boolean,
+            ai_photo_match_confidence = $6::numeric,
+            category_id = COALESCE($7::integer, category_id),
             priority = CASE
               WHEN $2::varchar = 'critical' THEN 'critical'
               WHEN $2::varchar = 'high' THEN 'high'
@@ -75,13 +105,16 @@ const processJob = async (job) => {
             END,
             ai_processed_at = NOW(),
             updated_at = NOW()
-        WHERE id = $5
+        WHERE id = $8
       `,
       [
         analysis.category,
         analysis.severity,
         analysis.confidence,
-        analysis.summary,
+        `${analysis.summary} Photo verification: ${verification.reason}`,
+        verification.matches,
+        verification.confidence,
+        category.rows[0]?.id ?? null,
         issueId
       ]
     );

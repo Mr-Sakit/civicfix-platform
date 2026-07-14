@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { civicfixApi } from '../services/api';
-import type { AuthUser, BackendCategory, BackendIssue, BackendTeam } from '../services/api';
+import { ApiError, civicfixApi } from '../services/api';
+import type { AuthUser, BackendCategory, BackendIssue, BackendTeam, DuplicateIssueResponse, NotificationItem } from '../services/api';
 
 export interface Report {
   id: string;
@@ -20,7 +20,19 @@ export interface Report {
   isUrgent: boolean;
   notes?: string;
   imageName?: string;
+  watcherCount?: number;
+  aiSummary?: string;
+  aiPhotoMatch?: boolean | null;
 }
+
+export type AddReportResult =
+  | { status: 'created'; report: Report }
+  | { status: 'duplicate'; existingReport: Report; watcherCount: number; distanceMeters: number }
+  | { status: 'error'; message: string };
+
+const isDuplicateIssueResponse = (value: BackendIssue | DuplicateIssueResponse): value is DuplicateIssueResponse => {
+  return 'duplicate' in value && value.duplicate === true;
+};
 
 interface AppContextType {
   reports: Report[];
@@ -29,11 +41,16 @@ interface AppContextType {
   isAuthenticated: boolean;
   userRole: 'citizen' | 'admin';
   activeTab: string;
+  notifications: NotificationItem[];
+  unreadNotificationCount: number;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   selectedReportId: string;
-  addReport: (report: Omit<Report, 'id' | 'date'>) => Promise<void>;
+  addReport: (report: Omit<Report, 'id' | 'date'>) => Promise<AddReportResult>;
   updateReport: (id: string, updates: Partial<Report>) => Promise<void>;
+  watchReport: (id: string) => Promise<void>;
+  refreshNotifications: () => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
   setActiveTab: (tab: string) => void;
   setSelectedReportId: (id: string) => void;
   wizardStep: number;
@@ -199,6 +216,9 @@ const mapBackendIssue = (issue: BackendIssue): Report => ({
   lat: Number(issue.latitude ?? 40.7128),
   lng: Number(issue.longitude ?? -74.0060),
   isUrgent: normalizePriority(issue.priority) === 'High',
+  watcherCount: issue.watcher_count ?? 0,
+  aiSummary: issue.ai_summary ?? undefined,
+  aiPhotoMatch: issue.ai_photo_match ?? null,
 });
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -214,6 +234,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [categories, setCategories] = useState<BackendCategory[]>([]);
   const [teams, setTeams] = useState<BackendTeam[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [userRole, setUserRoleState] = useState<'citizen' | 'admin'>(currentUser?.role ?? 'citizen');
   const [activeTab, setActiveTabState] = useState<string>(
     currentUser ? getProtectedRouteState(currentUser.role, window.location.pathname).tab : initialRoute.tab
@@ -224,6 +246,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [wizardStep, setWizardStep] = useState<number>(1);
   const [wizardPhotos, setWizardPhotos] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(45);
+  const [watcherKey] = useState(() => {
+    const stored = localStorage.getItem('civicfix_watcher_key');
+    if (stored) return stored;
+    const next = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    localStorage.setItem('civicfix_watcher_key', next);
+    return next;
+  });
 
   useEffect(() => {
     localStorage.setItem('civicfix_reports', JSON.stringify(reports));
@@ -272,6 +301,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     void syncFromApi();
   }, []);
 
+  const refreshNotifications = async () => {
+    if (!currentUser) return;
+
+    try {
+      const result = await civicfixApi.getNotifications({
+        userId: currentUser.id,
+        role: currentUser.role
+      });
+      setNotifications(result.notifications);
+      setUnreadNotificationCount(result.unreadCount);
+    } catch {
+      setNotifications([]);
+      setUnreadNotificationCount(0);
+    }
+  };
+
+  useEffect(() => {
+    void refreshNotifications();
+  }, [currentUser]);
+
   useEffect(() => {
     const onPopState = () => {
       if (!currentUser) {
@@ -311,16 +360,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const user = await civicfixApi.login({ email, password });
     setCurrentUser(user);
     navigateTo(user.role, user.role === 'admin' ? 'dashboard' : 'home');
+    setTimeout(() => void refreshNotifications(), 0);
   };
 
   const logout = () => {
     setCurrentUser(null);
+    setNotifications([]);
+    setUnreadNotificationCount(0);
     setUserRoleState('citizen');
     setActiveTabState('home');
     window.history.replaceState({}, '', '/');
   };
 
-  const addReport = async (reportData: Omit<Report, 'id' | 'date'>) => {
+  const addReport = async (reportData: Omit<Report, 'id' | 'date'>): Promise<AddReportResult> => {
     const nextId = `#FIX-${Math.floor(1000 + Math.random() * 9000)}`;
     const newReport: Report = {
       ...reportData,
@@ -332,28 +384,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const categoryId = findCategoryId(categories, reportData.category);
 
-    if (categoryId) {
-      try {
-        const createdIssue = await civicfixApi.createIssue({
-          title: reportData.title,
-          description: reportData.description,
-          categoryId,
-          address: reportData.location,
-          latitude: reportData.lat,
-          longitude: reportData.lng,
-          imageDataUrl: reportData.image,
-          imageName: reportData.imageName,
-        });
+    if (!categoryId) {
+      return { status: 'error', message: 'Could not map the selected category to the backend.' };
+    }
 
-        const mappedIssue = mapBackendIssue(createdIssue);
-        setReports((prev) =>
-          prev.map((report) => (report.id === nextId ? { ...mappedIssue, image: mappedIssue.image || reportData.image } : report))
-        );
-        setSelectedReportId(mappedIssue.id);
+    try {
+      const createdIssue = await civicfixApi.createIssue({
+        title: reportData.title,
+        description: reportData.description,
+        categoryId,
+        address: reportData.location,
+        latitude: reportData.lat,
+        longitude: reportData.lng,
+        imageDataUrl: reportData.image,
+        imageName: reportData.imageName,
+        userId: currentUser?.id,
+        watcherKey,
+      });
+
+      if (isDuplicateIssueResponse(createdIssue)) {
+        const existingReport = mapBackendIssue(createdIssue.issue);
+        setReports((prev) => prev.filter((report) => report.id !== nextId));
+        setSelectedReportId(existingReport.id);
         setIsApiConnected(true);
-      } catch {
-        setIsApiConnected(false);
+        await refreshNotifications();
+        return {
+          status: 'duplicate',
+          existingReport,
+          watcherCount: createdIssue.watcherCount,
+          distanceMeters: createdIssue.distanceMeters,
+        };
       }
+
+      const mappedIssue = mapBackendIssue(createdIssue);
+      setReports((prev) =>
+        prev.map((report) => (report.id === nextId ? { ...mappedIssue, image: mappedIssue.image || reportData.image } : report))
+      );
+      setSelectedReportId(mappedIssue.id);
+      setIsApiConnected(true);
+      await refreshNotifications();
+      return { status: 'created', report: mappedIssue };
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409 && error.body && typeof error.body === 'object' && 'data' in error.body) {
+        const duplicate = (error.body as { data?: DuplicateIssueResponse }).data;
+        if (duplicate?.duplicate) {
+          const existingReport = mapBackendIssue(duplicate.issue);
+          setReports((prev) => prev.filter((report) => report.id !== nextId));
+          setSelectedReportId(existingReport.id);
+          setIsApiConnected(true);
+          await refreshNotifications();
+          return {
+            status: 'duplicate',
+            existingReport,
+            watcherCount: duplicate.watcherCount,
+            distanceMeters: duplicate.distanceMeters,
+          };
+        }
+      }
+      setIsApiConnected(false);
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to submit report.'
+      };
     }
   };
 
@@ -392,6 +484,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     navigateTo(currentUser?.role ?? userRole, tab);
   };
 
+  const watchReport = async (id: string) => {
+    const report = reports.find((item) => item.id === id);
+    if (!report?.backendId) return;
+
+    const result = await civicfixApi.watchIssue(report.backendId, {
+      userId: currentUser?.id,
+      watcherKey,
+    });
+
+    setReports((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, watcherCount: result.watcherCount } : item
+      )
+    );
+    await refreshNotifications();
+  };
+
+  const markAllNotificationsRead = async () => {
+    if (!currentUser) return;
+    await civicfixApi.markAllNotificationsRead({
+      userId: currentUser.id,
+      role: currentUser.role,
+    });
+    setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
+    setUnreadNotificationCount(0);
+  };
+
   const addWizardPhoto = (photoUrl: string) => {
     setWizardPhotos((prev) => [...prev, photoUrl]);
   };
@@ -415,11 +534,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAuthenticated: Boolean(currentUser),
         userRole,
         activeTab,
+        notifications,
+        unreadNotificationCount,
         login,
         logout,
         selectedReportId,
         addReport,
         updateReport,
+        watchReport,
+        refreshNotifications,
+        markAllNotificationsRead,
         setActiveTab,
         setSelectedReportId,
         wizardStep,
