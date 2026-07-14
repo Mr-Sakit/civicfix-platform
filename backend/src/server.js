@@ -14,6 +14,38 @@ app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
 
+const reportRateLimitWindowMs = 60 * 1000;
+const reportRateLimitMax = 8;
+const reportRateLimitBuckets = new Map();
+
+const getClientKey = (request) =>
+  String(request.get("x-forwarded-for") ?? request.ip ?? "unknown")
+    .split(",")[0]
+    .trim()
+    .slice(0, 80);
+
+const limitReportCreation = (request, response, next) => {
+  const now = Date.now();
+  const key = getClientKey(request);
+  const bucket = reportRateLimitBuckets.get(key) ?? { count: 0, resetAt: now + reportRateLimitWindowMs };
+
+  if (bucket.resetAt <= now) {
+    bucket.count = 0;
+    bucket.resetAt = now + reportRateLimitWindowMs;
+  }
+
+  bucket.count += 1;
+  reportRateLimitBuckets.set(key, bucket);
+
+  if (bucket.count > reportRateLimitMax) {
+    return response.status(429).json({
+      message: "Too many report submissions. Please wait a minute and try again."
+    });
+  }
+
+  next();
+};
+
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
   ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }]
@@ -597,9 +629,9 @@ app.get("/api/issues", async (_request, response, next) => {
   }
 });
 
-app.post("/api/issues", async (request, response, next) => {
+app.post("/api/issues", limitReportCreation, async (request, response, next) => {
   try {
-    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey, forceCreate } =
+    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey } =
       request.body;
 
     if (!title || !description) {
@@ -639,14 +671,12 @@ app.post("/api/issues", async (request, response, next) => {
       });
     }
 
-    const duplicate = forceCreate
-      ? null
-      : await findDuplicateIssue({
-          categoryId: resolvedCategoryId,
-          latitude,
-          longitude,
-          imageDataUrl: imageDataUrlForAi
-        });
+    const duplicate = await findDuplicateIssue({
+      categoryId: resolvedCategoryId,
+      latitude,
+      longitude,
+      imageDataUrl: imageDataUrlForAi
+    });
 
     if (duplicate) {
       const watcher = await addWatcher({
