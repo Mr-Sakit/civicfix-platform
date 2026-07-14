@@ -122,8 +122,7 @@ app.use("/downloads", express.static(path.join(__dirname, "../public/downloads")
 
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
-  ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }],
-  ["crew.demo@civicfix.local", { password: "crew-demo", role: "crew" }]
+  ["admin.demo@civicfix.local", { password: "admin-demo", role: "admin" }]
 ]);
 
 const getPublicBaseUrl = (request) => {
@@ -234,13 +233,6 @@ const ensureRuntimeSchema = async () => {
     INSERT INTO users (full_name, email, role_id)
     SELECT 'CivicFix Operations Admin', 'admin.demo@civicfix.local', roles.id
     FROM roles WHERE roles.name = 'admin'
-    ON CONFLICT (email) DO NOTHING
-  `);
-  await query(`
-    INSERT INTO users (full_name, email, role_id, team_id)
-    SELECT 'CivicFix Demo Crew', 'crew.demo@civicfix.local', roles.id, teams.id
-    FROM roles, teams
-    WHERE roles.name = 'maintenance' AND teams.name = 'Road Maintenance'
     ON CONFLICT (email) DO NOTHING
   `);
 };

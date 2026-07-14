@@ -314,7 +314,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [refreshIssues]);
 
   useEffect(() => {
+    const interval = setInterval(() => void refreshIssues(), 15000);
+    return () => clearInterval(interval);
+  }, [refreshIssues]);
+
+  useEffect(() => {
     if (currentUser) void refreshNotifications();
+  }, [currentUser, refreshNotifications]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(() => void refreshNotifications(), 15000);
+    return () => clearInterval(interval);
   }, [currentUser, refreshNotifications]);
 
   useEffect(() => {

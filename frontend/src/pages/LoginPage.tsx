@@ -30,7 +30,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
   const DEMO_ACCOUNTS: Array<{ label: string; email: string; password: string }> = [
     { label: 'Citizen demo', email: 'resident.demo@civicfix.local', password: 'resident-demo' },
-    { label: 'Crew demo', email: 'crew.demo@civicfix.local', password: 'crew-demo' },
+    { label: 'Crew demo', email: 'crew_waste@civicfix.local', password: '***REMOVED***' },
     // Admin isn't part of the mobile app's scope, so it's web-only.
     ...(isNative ? [] : [{ label: 'Manager demo', email: 'admin.demo@civicfix.local', password: 'admin-demo' }]),
   ];
