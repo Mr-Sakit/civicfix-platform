@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
 import { sendStoredImage } from "./imageResponse.js";
@@ -14,37 +15,15 @@ app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
 
-const reportRateLimitWindowMs = 60 * 1000;
-const reportRateLimitMax = 8;
-const reportRateLimitBuckets = new Map();
-
-const getClientKey = (request) =>
-  String(request.get("x-forwarded-for") ?? request.ip ?? "unknown")
-    .split(",")[0]
-    .trim()
-    .slice(0, 80);
-
-const limitReportCreation = (request, response, next) => {
-  const now = Date.now();
-  const key = getClientKey(request);
-  const bucket = reportRateLimitBuckets.get(key) ?? { count: 0, resetAt: now + reportRateLimitWindowMs };
-
-  if (bucket.resetAt <= now) {
-    bucket.count = 0;
-    bucket.resetAt = now + reportRateLimitWindowMs;
+const limitReportCreation = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many report submissions. Please wait a minute and try again."
   }
-
-  bucket.count += 1;
-  reportRateLimitBuckets.set(key, bucket);
-
-  if (bucket.count > reportRateLimitMax) {
-    return response.status(429).json({
-      message: "Too many report submissions. Please wait a minute and try again."
-    });
-  }
-
-  next();
-};
+});
 
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
@@ -525,7 +504,7 @@ app.get("/api/teams", async (_request, response, next) => {
     const result = await query(
       "SELECT id, name, description FROM teams ORDER BY name"
     );
-    response.json({ data: result.rows });
+    response.json({ data: result.rows.map(toPublicIssue) });
   } catch (error) {
     next(error);
   }
