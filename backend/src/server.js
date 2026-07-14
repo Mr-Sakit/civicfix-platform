@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
+import { sendStoredImage } from "./imageResponse.js";
 import { observeHttpRequest, registry } from "./metrics.js";
 import { ensureQueueReady } from "./queue.js";
 import { ensureStorageReady, loadImageObject, saveImageObject } from "./storage.js";
@@ -1298,13 +1299,6 @@ app.patch("/api/issues/:id/status", requireAuth, requireRole("admin"), async (re
   }
 });
 
-app.use((error, _request, response, _next) => {
-  response.status(error.statusCode ?? 500).json({
-    message: "Unexpected server error",
-    detail: config.nodeEnv === "production" ? undefined : error.message
-  });
-});
-
 app.get("/api/photos/:fileName", async (request, response, next) => {
   try {
     const fileName = request.params.fileName;
@@ -1323,13 +1317,21 @@ app.get("/api/photos/:fileName", async (request, response, next) => {
     }
 
     const image = await loadImageObject(fileName);
-    response
-      .type(result.rows[0].mime_type)
-      .set("Cache-Control", "private, max-age=300")
-      .send(image);
+    sendStoredImage(response, {
+      fileName: result.rows[0].file_name,
+      mimeType: result.rows[0].mime_type,
+      image
+    });
   } catch (error) {
     next(error);
   }
+});
+
+app.use((error, _request, response, _next) => {
+  response.status(error.statusCode ?? 500).json({
+    message: "Unexpected server error",
+    detail: config.nodeEnv === "production" ? undefined : error.message
+  });
 });
 
 ensureRuntimeSchema()

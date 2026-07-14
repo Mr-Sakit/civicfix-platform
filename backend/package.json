@@ -8,7 +8,7 @@
     "start": "node src/server.js",
     "worker": "node src/worker.js",
     "dev": "node --watch src/server.js",
-    "check": "node --check src/server.js && node --check src/worker.js && node --check src/healthcheck.js && node --check src/storage.js && node --check src/queue.js && node --check src/keywordFallback.js && node --check src/gemini.js && node --check src/auth.js && node --test src/storage.test.js"
+    "check": "node --check src/server.js && node --check src/worker.js && node --check src/healthcheck.js && node --check src/storage.js && node --check src/imageResponse.js && node --check src/queue.js && node --check src/keywordFallback.js && node --check src/gemini.js && node --check src/auth.js && node --test src/storage.test.js"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",

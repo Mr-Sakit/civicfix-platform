@@ -121,6 +121,17 @@ export const CitizenDashboard: React.FC = () => {
           </div>
           <div className="flex-1 relative min-h-0">
             <MapContainer interactive={false} focusCoordinates={myLocation} />
+            {reports.length === 0 ? (
+              <div className="absolute bottom-4 left-4 right-4 z-30 glass-card p-sm rounded-lg flex items-center gap-md border border-outline-variant/30 shadow-lg">
+                <div className="w-10 h-10 bg-secondary-container rounded-lg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-secondary">check_circle</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-label-sm font-label-sm text-on-surface">No active reports</p>
+                  <p className="text-[10px] text-on-surface-variant">The live report feed is currently clear.</p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -185,7 +196,9 @@ export const CitizenDashboard: React.FC = () => {
             <h3 className="font-label-md text-label-md">Community Updates</h3>
           </div>
           <div className="divide-y divide-surface-container/60">
-            {recentUpdates.map((report) => (
+            {recentUpdates.length === 0 ? (
+              <div className="p-lg text-center text-on-surface-variant">No community updates yet.</div>
+            ) : recentUpdates.map((report) => (
               <div
                 key={report.id}
                 onClick={() => (report.backendId ? navigateToReportDetail(report.backendId) : setActiveTab('activity'))}
