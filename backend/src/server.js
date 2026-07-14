@@ -13,6 +13,8 @@ import { categorizeIssue, compareBeforeAfterPhotos, comparePhotoSimilarity, matc
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 const KNOWN_CATEGORIES = [
   "Road Damage",
   "Street Lighting",
