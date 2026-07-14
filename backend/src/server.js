@@ -1,18 +1,29 @@
 import cors from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { config } from "./config.js";
 import { checkDatabase, query } from "./db.js";
 import { sendStoredImage } from "./imageResponse.js";
 import { aiQueueEnqueueTotal, observeHttpRequest, registry } from "./metrics.js";
 import { enqueueImageAnalysisJob, ensureQueueReady } from "./queue.js";
 import { ensureStorageReady, loadImageObject, saveImageObject } from "./storage.js";
-import { analyzeIssueImage, verifyIssuePhoto } from "./aiAnalyzer.js";
+import { analyzeIssueImage, compareIssuePhotos, verifyIssuePhoto } from "./aiAnalyzer.js";
 
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
+
+const limitReportCreation = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many report submissions. Please wait a minute and try again."
+  }
+});
 
 const demoCredentials = new Map([
   ["resident.demo@civicfix.local", { password: "resident-demo", role: "citizen" }],
@@ -50,6 +61,8 @@ const issueSelect = `
     teams.id AS assigned_team_id,
     teams.name AS assigned_team,
     photos.file_path AS image_url,
+    photos.file_name,
+    photos.mime_type,
     COALESCE(watchers.watcher_count, 0) AS watcher_count
   FROM civic_issues ci
   JOIN issue_categories ic ON ic.id = ci.category_id
@@ -79,6 +92,51 @@ const distanceMeters = (latA, lngA, latB, lngB) => {
   return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
+const buildImageDataUrl = (buffer, mimeType) => `data:${mimeType};base64,${buffer.toString("base64")}`;
+
+const decodeIssueImageDataUrl = (imageDataUrl) => {
+  if (!imageDataUrl) return null;
+
+  const match = /^data:(image\/(?:png|jpe?g|webp));base64,([A-Za-z0-9+/=]+)$/.exec(imageDataUrl);
+  if (!match) {
+    const error = new Error("imageDataUrl must be a PNG, JPG, JPEG, or WEBP data URL");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const [, mimeType, base64] = match;
+  const buffer = Buffer.from(base64, "base64");
+
+  if (buffer.byteLength > 10 * 1024 * 1024) {
+    const error = new Error("Image must be smaller than 10MB");
+    error.statusCode = 413;
+    throw error;
+  }
+
+  return { mimeType, buffer };
+};
+
+const getRequiredString = (value, fieldName) => {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    const error = new Error(`${fieldName} is required`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return text;
+};
+
+const lookupCategoryId = async (categoryName, fallbackCategoryId) => {
+  const result = await query("SELECT id FROM issue_categories WHERE name = $1", [categoryName]);
+  return result.rows[0]?.id ?? fallbackCategoryId;
+};
+
+const toPublicIssue = (issue) => {
+  if (!issue) return issue;
+  const { file_name: _fileName, mime_type: _mimeType, ...publicIssue } = issue;
+  return publicIssue;
+};
+
 const makeWatcherKey = ({ userId, watcherKey }) => {
   if (Number.isInteger(Number(userId))) return `user:${Number(userId)}`;
   return `anon:${String(watcherKey ?? "demo-session").slice(0, 80)}`;
@@ -86,7 +144,7 @@ const makeWatcherKey = ({ userId, watcherKey }) => {
 
 const fetchIssueById = async (issueId) => {
   const result = await query(`${issueSelect} WHERE ci.id = $1`, [issueId]);
-  return result.rows[0] ?? null;
+  return toPublicIssue(result.rows[0] ?? null);
 };
 
 const addNotification = async ({ userId = null, recipientRole = null, issueId = null, type, message }) => {
@@ -121,7 +179,7 @@ const addWatcher = async ({ issueId, userId, watcherKey }) => {
   };
 };
 
-const findDuplicateIssue = async ({ categoryId, latitude, longitude }) => {
+const findDuplicateIssue = async ({ categoryId, latitude, longitude, imageDataUrl }) => {
   const lat = Number(latitude);
   const lng = Number(longitude);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -139,15 +197,45 @@ const findDuplicateIssue = async ({ categoryId, latitude, longitude }) => {
     [categoryId, lat - 0.003, lat + 0.003, lng - 0.003, lng + 0.003]
   );
 
-  return (
-    candidates.rows
-      .map((issue) => ({
-        issue,
-        distance: distanceMeters(lat, lng, Number(issue.latitude), Number(issue.longitude))
-      }))
-      .filter((candidate) => candidate.distance <= 150)
-      .sort((a, b) => a.distance - b.distance)[0] ?? null
-  );
+  const nearby = candidates.rows
+    .map((issue) => ({
+      issue,
+      distance: distanceMeters(lat, lng, Number(issue.latitude), Number(issue.longitude))
+    }))
+    .filter((candidate) => candidate.distance <= 150)
+    .sort((a, b) => a.distance - b.distance);
+
+  for (const candidate of nearby) {
+    if (candidate.distance <= 35) {
+      return {
+        ...candidate,
+        reason: "same-category report within 35 meters"
+      };
+    }
+
+    if (imageDataUrl && candidate.issue.file_name && candidate.issue.mime_type) {
+      try {
+        const existingImage = await loadImageObject(candidate.issue.file_name);
+        const existingImageDataUrl = buildImageDataUrl(existingImage, candidate.issue.mime_type);
+        const similarity = await compareIssuePhotos({
+          firstImageDataUrl: imageDataUrl,
+          secondImageDataUrl: existingImageDataUrl
+        });
+
+        if (similarity.similar && similarity.confidence >= 0.72) {
+          return {
+            ...candidate,
+            reason: `AI photo similarity: ${similarity.reason}`,
+            similarity
+          };
+        }
+      } catch (error) {
+        console.warn(`Duplicate photo comparison skipped: ${error.message}`);
+      }
+    }
+  }
+
+  return null;
 };
 
 const analyzeIssueInline = async ({ issueId, title, description, imageName, savedPhoto }) => {
@@ -163,7 +251,7 @@ const analyzeIssueInline = async ({ issueId, title, description, imageName, save
     [issueId]
   );
 
-  const imageDataUrl = `data:${savedPhoto.mimeType};base64,${savedPhoto.buffer.toString("base64")}`;
+  const imageDataUrl = buildImageDataUrl(savedPhoto.buffer, savedPhoto.mimeType);
   const [analysis, verification] = await Promise.all([
     analyzeIssueImage({ title, description, imageName, imageDataUrl }),
     verifyIssuePhoto({ title, description, imageDataUrl })
@@ -298,29 +386,16 @@ const ensureRuntimeSchema = async () => {
 };
 
 const saveIssuePhoto = async ({ issueId, imageDataUrl, imageName }, request) => {
-  if (!imageDataUrl) return null;
+  const decodedImage = decodeIssueImageDataUrl(imageDataUrl);
+  if (!decodedImage) return null;
 
-  const match = /^data:(image\/(?:png|jpe?g|webp));base64,([A-Za-z0-9+/=]+)$/.exec(imageDataUrl);
-  if (!match) {
-    const error = new Error("imageDataUrl must be a PNG, JPG, JPEG, or WEBP data URL");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const [, mimeType, base64] = match;
+  const { mimeType, buffer } = decodedImage;
   const extension = mimeType.split("/")[1].replace("jpeg", "jpg");
   const safeOriginalName = String(imageName ?? "issue-photo")
     .replace(/[^a-zA-Z0-9._-]/g, "-")
     .replace(/\.(png|jpg|jpeg|webp)$/i, "")
     .slice(0, 80);
   const fileName = `${issueId}-${Date.now()}-${safeOriginalName}.${extension}`;
-  const buffer = Buffer.from(base64, "base64");
-
-  if (buffer.byteLength > 10 * 1024 * 1024) {
-    const error = new Error("Image must be smaller than 10MB");
-    error.statusCode = 413;
-    throw error;
-  }
 
   const savedImage = await saveImageObject({ fileName, buffer, mimeType });
   const publicUrl = savedImage.publicUrl.startsWith("/")
@@ -428,7 +503,7 @@ app.get("/api/categories", async (_request, response, next) => {
     const result = await query(
       "SELECT id, name, description FROM issue_categories ORDER BY name"
     );
-    response.json({ data: result.rows });
+    response.json({ data: result.rows.map(toPublicIssue) });
   } catch (error) {
     next(error);
   }
@@ -439,7 +514,7 @@ app.get("/api/teams", async (_request, response, next) => {
     const result = await query(
       "SELECT id, name, description FROM teams ORDER BY name"
     );
-    response.json({ data: result.rows });
+    response.json({ data: result.rows.map(toPublicIssue) });
   } catch (error) {
     next(error);
   }
@@ -537,26 +612,56 @@ app.get("/api/issues", async (_request, response, next) => {
       LIMIT 25
     `);
 
-    response.json({ data: result.rows });
+    response.json({ data: result.rows.map(toPublicIssue) });
   } catch (error) {
     next(error);
   }
 });
 
-app.post("/api/issues", async (request, response, next) => {
+app.post("/api/issues", limitReportCreation, async (request, response, next) => {
   try {
-    const { title, description, categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey, forceCreate } =
+    const { categoryId, address, latitude, longitude, imageDataUrl, imageName, userId, watcherKey } =
       request.body;
+    const title = getRequiredString(request.body.title, "title");
+    const description = getRequiredString(request.body.description, "description");
 
-    if (!title || !description || !categoryId) {
+    const fallbackCategoryId = Number.isInteger(Number(categoryId)) ? Number(categoryId) : null;
+    const decodedImage = decodeIssueImageDataUrl(imageDataUrl);
+    const imageDataUrlForAi = decodedImage ? buildImageDataUrl(decodedImage.buffer, decodedImage.mimeType) : "";
+    const aiAnalysis = decodedImage
+      ? await analyzeIssueImage({ title, description, imageName, imageDataUrl: imageDataUrlForAi })
+      : null;
+    const resolvedCategoryId = aiAnalysis
+      ? await lookupCategoryId(aiAnalysis.category, fallbackCategoryId)
+      : fallbackCategoryId;
+
+    if (!resolvedCategoryId) {
       return response.status(400).json({
-        message: "title, description, and categoryId are required"
+        message: "A valid category is required when AI cannot infer a supported category."
       });
     }
 
-    const duplicate = forceCreate
-      ? null
-      : await findDuplicateIssue({ categoryId, latitude, longitude });
+    const photoVerification = decodedImage
+      ? await verifyIssuePhoto({ title, description, imageDataUrl: imageDataUrlForAi })
+      : null;
+
+    if (photoVerification && !photoVerification.matches && photoVerification.confidence >= 0.7) {
+      return response.status(422).json({
+        message: "The uploaded photo does not appear to match this report. Please upload a relevant civic-issue photo.",
+        data: {
+          mismatch: true,
+          confidence: photoVerification.confidence,
+          reason: photoVerification.reason
+        }
+      });
+    }
+
+    const duplicate = await findDuplicateIssue({
+      categoryId: resolvedCategoryId,
+      latitude,
+      longitude,
+      imageDataUrl: imageDataUrlForAi
+    });
 
     if (duplicate) {
       const watcher = await addWatcher({
@@ -574,10 +679,10 @@ app.post("/api/issues", async (request, response, next) => {
       return response.status(409).json({
         data: {
           duplicate: true,
-          issue: {
+          issue: toPublicIssue({
             ...duplicate.issue,
             watcher_count: watcher.watcherCount
-          },
+          }),
           distanceMeters: Math.round(duplicate.distance),
           watcherCount: watcher.watcherCount,
           alreadyWatching: !watcher.added
@@ -593,8 +698,40 @@ app.post("/api/issues", async (request, response, next) => {
           ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id, title, description, status, priority, address, latitude, longitude, assigned_team_id, created_at, updated_at
       `,
-      [title, description, categoryId, address, latitude, longitude, Number.isInteger(Number(userId)) ? Number(userId) : null]
+      [title, description, resolvedCategoryId, address, latitude, longitude, Number.isInteger(Number(userId)) ? Number(userId) : null]
     );
+
+    if (aiAnalysis || photoVerification) {
+      await query(
+        `
+          UPDATE civic_issues
+          SET ai_category = COALESCE($1::varchar, ai_category),
+              ai_severity = COALESCE($2::varchar, ai_severity),
+              ai_confidence = COALESCE($3::numeric, ai_confidence),
+              ai_summary = COALESCE($4::text, ai_summary),
+              ai_photo_match = COALESCE($5::boolean, ai_photo_match),
+              ai_photo_match_confidence = COALESCE($6::numeric, ai_photo_match_confidence),
+              priority = CASE
+                WHEN $2::varchar = 'critical' THEN 'critical'
+                WHEN $2::varchar = 'high' THEN 'high'
+                ELSE priority
+              END,
+              updated_at = NOW()
+          WHERE id = $7
+        `,
+        [
+          aiAnalysis?.category ?? null,
+          aiAnalysis?.severity ?? null,
+          aiAnalysis?.confidence ?? null,
+          aiAnalysis
+            ? `${aiAnalysis.summary}${photoVerification ? ` Photo verification: ${photoVerification.reason}` : ""}`
+            : photoVerification?.reason ?? null,
+          photoVerification?.matches ?? null,
+          photoVerification?.confidence ?? null,
+          result.rows[0].id
+        ]
+      );
+    }
 
     await addWatcher({
       issueId: result.rows[0].id,

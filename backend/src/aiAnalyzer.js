@@ -71,7 +71,7 @@ export const analyzeIssueFallback = ({ title = "", description = "", imageName =
   );
 
   const result = match ?? {
-    category: "ROADS",
+    category: "Road Damage",
     severity: "medium",
     keywords: []
   };
@@ -83,6 +83,16 @@ export const analyzeIssueFallback = ({ title = "", description = "", imageName =
     summary: match
       ? `Fallback triage matched report context to ${result.category}.`
       : "Fallback triage selected a default civic infrastructure category."
+  };
+};
+
+const normalizeBooleanConfidence = (parsed, fallback) => {
+  const confidence = Number(parsed?.confidence);
+
+  return {
+    confidence: Number.isFinite(confidence)
+      ? Math.min(1, Math.max(0, confidence))
+      : fallback.confidence
   };
 };
 
@@ -173,13 +183,66 @@ export const verifyIssuePhoto = async ({
     const parsed = parseJsonObject(response.output_text);
     return {
       matches: Boolean(parsed.matches),
-      confidence: Number.isFinite(Number(parsed.confidence))
-        ? Math.min(1, Math.max(0, Number(parsed.confidence)))
-        : fallback.confidence,
+      ...normalizeBooleanConfidence(parsed, fallback),
       reason: String(parsed.reason ?? fallback.reason).slice(0, 240)
     };
   } catch (error) {
     console.warn(`OpenAI photo verification failed, using fallback: ${error.message}`);
+    return fallback;
+  }
+};
+
+export const compareIssuePhotos = async ({
+  firstImageDataUrl = "",
+  secondImageDataUrl = ""
+}) => {
+  const fallback = {
+    similar: false,
+    confidence: 0,
+    reason: "Photo similarity was not verified by AI."
+  };
+  const client = getOpenAIClient();
+
+  if (!client || !firstImageDataUrl || !secondImageDataUrl) return fallback;
+
+  try {
+    const response = await client.responses.create({
+      model: config.openai.model,
+      input: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text:
+                "Compare these two citizen-uploaded photos of possible civic infrastructure issues. " +
+                "Decide whether they likely show the same real-world problem at the same place, " +
+                "not merely the same type of issue. Return only JSON with keys similar, confidence, reason."
+            },
+            {
+              type: "input_image",
+              image_url: firstImageDataUrl
+            },
+            {
+              type: "input_image",
+              image_url: secondImageDataUrl
+            }
+          ]
+        }
+      ],
+      text: { format: { type: "json_object" } },
+      max_output_tokens: 180
+    });
+
+    const parsed = parseJsonObject(response.output_text);
+
+    return {
+      similar: Boolean(parsed.similar),
+      ...normalizeBooleanConfidence(parsed, fallback),
+      reason: String(parsed.reason ?? fallback.reason).slice(0, 240)
+    };
+  } catch (error) {
+    console.warn(`OpenAI photo similarity failed, using fallback: ${error.message}`);
     return fallback;
   }
 };
