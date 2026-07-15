@@ -31,6 +31,10 @@ spec:
       labels:
         app.kubernetes.io/name: civicfix-ai-worker
         app.kubernetes.io/part-of: civicfix-platform
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: worker

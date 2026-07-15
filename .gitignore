@@ -42,6 +42,8 @@ docs/team-progress-report.md
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+# Remote state backend config (may contain environment-specific values)
+backend.config
 crash.log
 crash.*.log
 override.tf
