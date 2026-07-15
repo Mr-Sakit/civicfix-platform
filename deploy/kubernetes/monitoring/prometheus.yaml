@@ -90,6 +90,10 @@ data:
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          # The API server is discovered by its endpoint IP, but its serving
+          # certificate is only valid for the kubernetes service IP/DNS names.
+          # Verify against the DNS name (a SAN on the cert) instead of the IP.
+          server_name: kubernetes.default.svc
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
           - source_labels:
