@@ -11,10 +11,11 @@ COPY tailwind.config.js ./tailwind.config.js
 COPY tsconfig*.json ./
 COPY public ./public
 COPY src ./src
+RUN npm run build
 RUN chown -R node:node /app
 
 USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "preview"]
