@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - civicfix-external-secrets-operator.yaml
+  - civicfix-kyverno.yaml
+  - civicfix-kyverno-policies.yaml
   - civicfix-prod-secrets.yaml
   - civicfix-prod-application.yaml
   - civicfix-monitoring.yaml

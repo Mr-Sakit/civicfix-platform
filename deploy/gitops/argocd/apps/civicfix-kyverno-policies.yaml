@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: civicfix-kyverno-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  labels:
+    app.kubernetes.io/name: civicfix-kyverno-policies
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  project: civicfix-platform
+  source:
+    repoURL: https://github.com/Mr-Sakit/civicfix-platform.git
+    targetRevision: main
+    path: deploy/kubernetes/admission/kyverno-policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ServerSideApply=true
