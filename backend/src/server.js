@@ -365,6 +365,12 @@ app.get("/api", (_request, response) => {
 const ROLE_NAME_TO_FRONTEND = { resident: "citizen", admin: "admin", maintenance: "crew" };
 const FRONTEND_ROLE_TO_ROLE_NAME = { citizen: "resident", admin: "admin", crew: "maintenance" };
 
+const createHttpError = (statusCode, message) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
 const buildAuthResponse = (userRow) => ({
   user: {
     id: userRow.id,
@@ -380,6 +386,26 @@ const buildAuthResponse = (userRow) => ({
     teamId: userRow.team_id ?? null
   })
 });
+
+const parseCitizenSignup = (body) => {
+  const fullName = String(body.fullName ?? "").trim();
+  const email = String(body.email ?? "").trim().toLowerCase();
+  const password = String(body.password ?? "");
+
+  const validationErrors = [];
+  if (!fullName) validationErrors.push("fullName");
+  if (!email) validationErrors.push("email");
+  if (password.length < 8) validationErrors.push("password");
+
+  if (validationErrors.length > 0) {
+    throw createHttpError(
+      400,
+      "fullName, email, and a password of at least 8 characters are required"
+    );
+  }
+
+  return { fullName, email, password };
+};
 
 app.post("/api/auth/login", authRateLimit, async (request, response, next) => {
   try {
@@ -422,16 +448,7 @@ app.post("/api/auth/login", authRateLimit, async (request, response, next) => {
 
 app.post("/api/auth/signup", authRateLimit, async (request, response, next) => {
   try {
-    const fullName = String(request.body.fullName ?? "").trim();
-    const email = String(request.body.email ?? "").trim().toLowerCase();
-    const password = String(request.body.password ?? "");
-
-    if (!fullName || !email || password.length < 8) {
-      return response.status(400).json({
-        message: "fullName, email, and a password of at least 8 characters are required"
-      });
-    }
-
+    const { fullName, email, password } = parseCitizenSignup(request.body);
     const passwordHash = await hashPassword(password);
 
     const inserted = await query(
@@ -1327,8 +1344,11 @@ app.get("/api/photos/:fileName", async (request, response, next) => {
 });
 
 app.use((error, _request, response, _next) => {
-  response.status(error.statusCode ?? 500).json({
-    message: "Unexpected server error",
+  const statusCode = error.statusCode ?? 500;
+  const isClientError = statusCode >= 400 && statusCode < 500;
+
+  response.status(statusCode).json({
+    message: isClientError ? error.message : "Unexpected server error",
     detail: config.nodeEnv === "production" ? undefined : error.message
   });
 });
