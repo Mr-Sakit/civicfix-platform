@@ -23,3 +23,17 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - PruneLast=true
+  # The HorizontalPodAutoscaler owns the replica count for these Deployments.
+  # Without this, self-heal would continually reset replicas to the Git value
+  # and fight the HPA.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: civicfix-backend
+      jsonPointers:
+        - /spec/replicas
+    - group: apps
+      kind: Deployment
+      name: civicfix-frontend
+      jsonPointers:
+        - /spec/replicas

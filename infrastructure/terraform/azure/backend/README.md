@@ -1,8 +1,20 @@
 # Terraform remote state backend
 
-This folder contains examples for the future Azure Storage remote state backend.
+The Azure Storage remote state backend is now **active**. It is declared as a
+partial configuration in [`../backend.tf`](../backend.tf) (an empty `azurerm`
+block plus `use_azuread_auth = true`), so no environment-specific or sensitive
+values are committed. The concrete storage account, container and state key are
+supplied at `terraform init` time from a local `backend.config` file.
 
-The backend is not active yet. This is intentional: remote state should only be enabled after the team creates and confirms the Azure Storage account used for Terraform state.
+One-time setup for a new subscription:
+
+1. Run [`bootstrap-state.sh`](./bootstrap-state.sh) to create the state resource
+   group, storage account (TLS 1.2, no public blob access, Azure AD auth only,
+   blob versioning) and container.
+2. Copy `backend.config.example` to `backend.config` and paste in the values the
+   script prints.
+3. Run `terraform init -backend-config=backend/backend.config`. Terraform will
+   offer to migrate the existing local state into Azure Storage.
 
 ## Why remote state matters
 
@@ -33,12 +45,15 @@ See:
 
 The team can later copy `backend.tf.example` to `backend.tf` after the backend storage account exists.
 
-## Future initialization
+## Initialization
 
 From `infrastructure/terraform/azure`:
 
-```powershell
-terraform init -backend-config="backend/backend.config"
+```bash
+./backend/bootstrap-state.sh                       # once per subscription
+cp backend/backend.config.example backend/backend.config
+# edit backend/backend.config with the printed values
+terraform init -backend-config=backend/backend.config
 ```
 
-Do not commit real backend config if it contains environment-specific or sensitive values.
+`backend.config` is git-ignored. Do not commit real backend config if it contains environment-specific or sensitive values.

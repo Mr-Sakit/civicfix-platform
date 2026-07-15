@@ -5,7 +5,8 @@ metadata:
   labels:
     civicfix.io/environment: prod
 spec:
-  replicas: 1
+  # replicas intentionally omitted: the HorizontalPodAutoscaler in hpa.yaml
+  # owns the replica count in prod (see ignoreDifferences in the Argo CD app).
   strategy:
     type: RollingUpdate
     rollingUpdate:

@@ -6,6 +6,9 @@ namespace: civicfix-monitoring
 resources:
   - namespace.yaml
   - prometheus.yaml
+  - kube-state-metrics.yaml
+  - node-exporter.yaml
+  - alertmanager.yaml
   - grafana.yaml
 
 generatorOptions:
@@ -31,6 +34,7 @@ configMapGenerator:
   - name: civicfix-grafana-dashboards
     files:
       - civicfix-overview.json=grafana-dashboards/civicfix-overview.json
+      - civicfix-cluster.json=grafana-dashboards/civicfix-cluster.json
     options:
       labels:
         app.kubernetes.io/name: civicfix-grafana

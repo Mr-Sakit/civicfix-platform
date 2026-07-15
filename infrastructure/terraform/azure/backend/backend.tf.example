@@ -1,10 +1,19 @@
+# NOTE: The active backend is now declared in ../backend.tf using a *partial*
+# configuration (an empty azurerm block + use_azuread_auth). Environment values
+# are supplied at init time from backend.config, so you normally do NOT need
+# this file.
+#
+# Keep this only if you prefer a fully self-contained, per-environment backend
+# block instead of the partial-config approach. If so, copy it to backend.tf
+# (replacing the partial one) and fill in the placeholders. Do not commit a
+# backend.tf that contains real values.
+
 terraform {
   backend "azurerm" {
-    # Copy this file to backend.tf and replace every placeholder.
-    # Do not commit backend.tf.
-    resource_group_name  = "<tfstate-resource-group>"
+    use_azuread_auth     = true
+    resource_group_name  = "rg-civicfix-tfstate"
     storage_account_name = "<tfstate-storage-account>"
-    container_name       = "<tfstate-container>"
-    key                  = "<environment>/terraform.tfstate"
+    container_name       = "tfstate"
+    key                  = "civicfix-platform/dev/terraform.tfstate"
   }
 }

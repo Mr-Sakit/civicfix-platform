@@ -1,0 +1,154 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: civicfix-kube-state-metrics
+  labels:
+    app.kubernetes.io/name: civicfix-kube-state-metrics
+    app.kubernetes.io/part-of: civicfix-platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: civicfix-kube-state-metrics
+  labels:
+    app.kubernetes.io/name: civicfix-kube-state-metrics
+    app.kubernetes.io/part-of: civicfix-platform
+rules:
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - secrets
+      - nodes
+      - pods
+      - services
+      - serviceaccounts
+      - resourcequotas
+      - replicationcontrollers
+      - limitranges
+      - persistentvolumeclaims
+      - persistentvolumes
+      - namespaces
+      - endpoints
+    verbs: ["list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - statefulsets
+      - daemonsets
+      - deployments
+      - replicasets
+    verbs: ["list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - cronjobs
+      - jobs
+    verbs: ["list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["list", "watch"]
+  - apiGroups: ["policy"]
+    resources:
+      - poddisruptionbudgets
+    verbs: ["list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs: ["list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+    verbs: ["list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: civicfix-kube-state-metrics
+  labels:
+    app.kubernetes.io/name: civicfix-kube-state-metrics
+    app.kubernetes.io/part-of: civicfix-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: civicfix-kube-state-metrics
+subjects:
+  - kind: ServiceAccount
+    name: civicfix-kube-state-metrics
+    namespace: civicfix-monitoring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicfix-kube-state-metrics
+  labels:
+    app.kubernetes.io/name: civicfix-kube-state-metrics
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: civicfix-kube-state-metrics
+  ports:
+    - name: http-metrics
+      port: 8080
+      targetPort: http-metrics
+    - name: telemetry
+      port: 8081
+      targetPort: telemetry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civicfix-kube-state-metrics
+  labels:
+    app.kubernetes.io/name: civicfix-kube-state-metrics
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-kube-state-metrics
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: civicfix-kube-state-metrics
+        app.kubernetes.io/part-of: civicfix-platform
+    spec:
+      serviceAccountName: civicfix-kube-state-metrics
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: kube-state-metrics
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http-metrics
+              containerPort: 8080
+            - name: telemetry
+              containerPort: 8081
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: telemetry
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 192Mi
