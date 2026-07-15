@@ -13,6 +13,13 @@ build/
 .next/
 coverage/
 
+# Android / Capacitor build artifacts
+frontend/android/app/build/
+frontend/android/build/
+frontend/android/.gradle/
+frontend/android/local.properties
+backend/public/downloads/*.apk
+
 # Logs
 *.log
 npm-debug.log*

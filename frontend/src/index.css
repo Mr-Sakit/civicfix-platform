@@ -58,6 +58,7 @@
   --spacing-lg: 24px;
   --spacing-xs: 4px;
   --spacing-xl: 32px;
+  --spacing-section: 48px;
   --spacing-container-margin: 20px;
   --spacing-base: 8px;
   --spacing-sm: 8px;
@@ -130,10 +131,13 @@
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
+html, body, #root {
+  height: 100%;
+}
+
 body {
   background-color: #f3f4f6;
   -webkit-tap-highlight-color: transparent;
-  min-height: max(884px, 100dvh);
 }
 
 .glass-card {

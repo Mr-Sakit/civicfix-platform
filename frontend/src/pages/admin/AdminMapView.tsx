@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
-import { useApp, type Report } from '../../context/AppContext';
+import { useApp, type Report, CATEGORY_NAMES } from '../../context/AppContext';
 import { MapContainer } from '../../components/MapContainer';
+
+const CATEGORY_ICONS: Record<string, string> = {
+  'Road Damage': 'edit_road',
+  'Street Lighting': 'lightbulb',
+  'Waste Management': 'delete',
+  'Water Leak': 'water_drop',
+  'Public Safety': 'shield',
+};
 
 export const AdminMapView: React.FC = () => {
   const { reports, selectedReportId, setSelectedReportId, setActiveTab } = useApp();
   const [filter, setFilter] = useState<string>('all');
 
   const filteredReports = reports.filter((report) => {
+    if (report.archived) return false;
     if (filter === 'all') return true;
     return report.category === filter;
   });
 
   const getPinColorBorder = (report: Report) => {
     switch (report.category) {
-      case 'ROADS': return 'border-l-error';
-      case 'UTILITIES': return 'border-l-tertiary-fixed-dim';
-      case 'SANITATION': return 'border-l-secondary';
-      default: return 'border-l-primary';
+      case 'Road Damage': return 'border-l-error';
+      case 'Street Lighting': return 'border-l-tertiary-fixed-dim';
+      case 'Waste Management': return 'border-l-secondary';
+      case 'Water Leak': return 'border-l-primary';
+      default: return 'border-l-on-surface';
     }
   };
 
@@ -25,7 +35,7 @@ export const AdminMapView: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden w-full animate-fade-in">
+    <div className="flex h-[calc(100vh_-_4rem)] overflow-hidden w-full animate-fade-in">
       
       {/* 70% Map Column */}
       <section className="w-[70%] h-full relative border-r border-outline-variant/20 bg-surface-container">
@@ -43,51 +53,36 @@ export const AdminMapView: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="font-headline-md text-headline-md font-bold">Activity Feed</h3>
             <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-label-sm font-bold">
-              {filteredReports.filter((r) => r.status !== 'Resolved').length} Active
+              {filteredReports.filter((r) => r.status !== 'resolved').length} Active
             </span>
           </div>
 
           <div className="flex flex-wrap gap-xs">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${
                 filter === 'all'
                   ? 'bg-primary-container text-on-primary-container shadow-sm'
                   : 'bg-surface-container text-on-surface-variant hover:bg-outline-variant/20'
               }`}
             >
+              <span className="material-symbols-outlined text-sm leading-none">apps</span>
               All
             </button>
-            <button
-              onClick={() => setFilter('ROADS')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                filter === 'ROADS'
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
-                  : 'bg-surface-container text-on-surface-variant hover:bg-outline-variant/20'
-              }`}
-            >
-              Roads
-            </button>
-            <button
-              onClick={() => setFilter('UTILITIES')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                filter === 'UTILITIES'
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
-                  : 'bg-surface-container text-on-surface-variant hover:bg-outline-variant/20'
-              }`}
-            >
-              Utilities
-            </button>
-            <button
-              onClick={() => setFilter('SANITATION')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                filter === 'SANITATION'
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
-                  : 'bg-surface-container text-on-surface-variant hover:bg-outline-variant/20'
-              }`}
-            >
-              Sanitation
-            </button>
+            {CATEGORY_NAMES.map((name) => (
+              <button
+                key={name}
+                onClick={() => setFilter(name)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${
+                  filter === name
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-outline-variant/20'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm leading-none">{CATEGORY_ICONS[name]}</span>
+                {name}
+              </button>
+            ))}
           </div>
         </div>
 

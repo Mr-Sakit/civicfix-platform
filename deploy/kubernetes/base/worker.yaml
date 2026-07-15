@@ -71,6 +71,16 @@ spec:
                 configMapKeyRef:
                   name: civicfix-app-config
                   key: QUEUE_PROVIDER
+            - name: STORAGE_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: STORAGE_PROVIDER
+            - name: AZURE_STORAGE_BLOB_CONTAINER
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: AZURE_STORAGE_BLOB_CONTAINER
             - name: AZURE_STORAGE_QUEUE_NAME
               valueFrom:
                 configMapKeyRef:
@@ -83,11 +93,22 @@ spec:
                   key: WORKER_POLL_INTERVAL_MS
             - name: WORKER_METRICS_PORT
               value: "9100"
+            - name: OPENAI_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: civicfix-app-config
+                  key: OPENAI_MODEL
             - name: AZURE_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
                   name: civicfix-app-secret
                   key: AZURE_STORAGE_CONNECTION_STRING
+                  optional: true
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: civicfix-app-secret
+                  key: OPENAI_API_KEY
                   optional: true
           resources:
             requests:

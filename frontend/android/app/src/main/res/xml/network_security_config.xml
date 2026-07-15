@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The backend runs over plain HTTP in dev, and Android blocks cleartext traffic by
+  default (API 28+). This is a debug-build convenience only — allows cleartext to any
+  host so the app can reach the dev backend whether it's the emulator alias (10.0.2.2),
+  localhost, or a physical device's LAN IP. Tighten this before shipping a release build
+  against a real HTTPS backend.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

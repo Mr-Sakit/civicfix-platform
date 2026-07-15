@@ -1,20 +1,70 @@
-import React from 'react';
-import { useApp } from '../../context/AppContext';
+import React, { useEffect, useState } from 'react';
+import { useApp, getStatusBucket, type ReportBucket } from '../../context/AppContext';
 import { MapContainer } from '../../components/MapContainer';
 import { StatusBadge } from '../../components/StatusBadge';
 
+const BUCKET_CONFIG: Record<ReportBucket, { icon: string; iconWrap: string; countClass: string; rowClass: string }> = {
+  Reported: {
+    icon: 'send',
+    iconWrap: 'bg-outline-variant/20 text-on-surface-variant',
+    countClass: 'text-primary',
+    rowClass: 'bg-surface-container-low border-outline-variant/10',
+  },
+  'In Progress': {
+    icon: 'engineering',
+    iconWrap: 'bg-tertiary-fixed-dim text-on-tertiary-fixed',
+    countClass: 'text-tertiary',
+    rowClass: 'bg-tertiary-fixed/10 border-tertiary-fixed/10',
+  },
+  Resolved: {
+    icon: 'check_circle',
+    iconWrap: 'bg-secondary-container text-on-secondary-container',
+    countClass: 'text-secondary',
+    rowClass: 'bg-secondary-container/30 border-secondary-container/20',
+  },
+};
+
 export const CitizenDashboard: React.FC = () => {
-  const { reports, setActiveTab, setSelectedReportId } = useApp();
+  const { reports, setActiveTab, navigateToReportDetail, currentUser } = useApp();
+  const [expandedBucket, setExpandedBucket] = useState<ReportBucket | null>(null);
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
-  const reportedCount = reports.filter((r) => r.status === 'Reported').length;
-  const progressCount = reports.filter((r) => r.status === 'In Progress').length;
-  const resolvedCount = reports.filter((r) => r.status === 'Resolved').length;
+  const collectNearbyLocation = () => {
+    if (!navigator.geolocation || !window.isSecureContext) {
+      setLocationStatus('error');
+      return;
+    }
+    setLocationStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setMyLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setLocationStatus('ready');
+      },
+      () => setLocationStatus('error'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
 
-  // Recent community updates
+  useEffect(() => {
+    collectNearbyLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const myReports = reports.filter((r) => r.reporterId === currentUser?.id || !currentUser);
+
+  const bucketed: Record<ReportBucket, typeof reports> = {
+    Reported: myReports.filter((r) => getStatusBucket(r.status) === 'Reported'),
+    'In Progress': myReports.filter((r) => getStatusBucket(r.status) === 'In Progress'),
+    Resolved: myReports.filter((r) => getStatusBucket(r.status) === 'Resolved'),
+  };
+
   const recentUpdates = reports.slice(0, 3);
 
-  const handleReportRedirect = () => {
-    setActiveTab('report');
+  const handleReportRedirect = () => setActiveTab('report');
+
+  const toggleBucket = (bucket: ReportBucket) => {
+    setExpandedBucket((current) => (current === bucket ? null : bucket));
   };
 
   return (
@@ -29,7 +79,7 @@ export const CitizenDashboard: React.FC = () => {
               Report Local Issues, <br className="hidden md:block" /> Improve Your City
             </h2>
             <p className="text-body-md text-on-surface-variant mb-lg max-w-md mx-auto md:mx-0">
-              Join your neighbors in building a better community. Report potholes, broken lights, or graffiti in seconds.
+              Join your neighbors in building a better community. Report potholes, broken lights, or waste issues in seconds.
             </p>
             <button
               onClick={handleReportRedirect}
@@ -38,15 +88,6 @@ export const CitizenDashboard: React.FC = () => {
               <span className="material-symbols-outlined">add_circle</span>
               Report an Issue
             </button>
-          </div>
-          <div className="hidden md:block flex-1 h-64 rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30">
-            <div
-              className="w-full h-full bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnKk8H-RMus0Vpoai8-exO_qQa5v9BymLMBePvhWMJvTXzuG3x5ZjisaXJGWrVFwOhnLfl8iPIcLOK-48QwwWeLnu6Rzba9B2e7eTahHv1U1FT89h447y4ILn0Kdt3MJxMdmervx5ylRaXapd_fR3vd06HMA9F_NIe_ACfDRnSYcfWuZVfRq2-K-vc-CiQOUYc6v7bMj7TKS4G-1GUOQ4YUjYqDavGqd8xIfyDLIqbaM3jaq7vSZq62W3x_jtQCMHhQ8XHPlVKmNA')"
-              }}
-            ></div>
           </div>
         </div>
       </section>
@@ -59,16 +100,27 @@ export const CitizenDashboard: React.FC = () => {
             <div className="flex items-center gap-xs">
               <span className="material-symbols-outlined text-primary">location_on</span>
               <h3 className="font-label-md text-label-md">Nearby Issues</h3>
+              {locationStatus === 'loading' && (
+                <span className="text-[10px] text-on-surface-variant">locating you…</span>
+              )}
+              {locationStatus === 'error' && (
+                <button
+                  onClick={collectNearbyLocation}
+                  className="text-[10px] text-error font-semibold hover:underline"
+                >
+                  Enable location to see what's nearby
+                </button>
+              )}
             </div>
             <button
-              onClick={() => setActiveTab('activity')}
+              onClick={() => setActiveTab('map')}
               className="text-primary font-label-sm text-label-sm hover:underline font-semibold"
             >
               View Full Map
             </button>
           </div>
           <div className="flex-1 relative min-h-0">
-            <MapContainer interactive={false} />
+            <MapContainer interactive={false} focusCoordinates={myLocation} />
             {reports.length === 0 ? (
               <div className="absolute bottom-4 left-4 right-4 z-30 glass-card p-sm rounded-lg flex items-center gap-md border border-outline-variant/30 shadow-lg">
                 <div className="w-10 h-10 bg-secondary-container rounded-lg flex items-center justify-center">
@@ -84,43 +136,57 @@ export const CitizenDashboard: React.FC = () => {
         </div>
 
         {/* Summary Card */}
-        <div className="md:col-span-4 bg-white rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-between h-[380px]">
-          <div className="p-md border-b border-surface-container/60">
+        <div className="md:col-span-4 bg-white rounded-xl shadow-sm border border-outline-variant/30 flex flex-col h-[380px] overflow-hidden">
+          <div className="p-md border-b border-surface-container/60 shrink-0">
             <h3 className="font-label-md text-label-md">My Active Reports</h3>
           </div>
-          <div className="flex-1 p-md flex flex-col justify-around gap-md">
-            {/* Reported */}
-            <div className="flex items-center justify-between p-sm bg-surface-container-low rounded-lg border border-outline-variant/10">
-              <div className="flex items-center gap-md">
-                <div className="w-8 h-8 rounded-full bg-outline-variant/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-on-surface-variant text-sm">send</span>
+          <div className="flex-1 p-md flex flex-col gap-sm overflow-y-auto">
+            {(Object.keys(BUCKET_CONFIG) as ReportBucket[]).map((bucket) => {
+              const config = BUCKET_CONFIG[bucket];
+              const bucketReports = bucketed[bucket];
+              const isExpanded = expandedBucket === bucket;
+              return (
+                <div key={bucket} className="flex flex-col gap-xs">
+                  <button
+                    onClick={() => toggleBucket(bucket)}
+                    className={`flex items-center justify-between p-sm rounded-lg border ${config.rowClass} w-full`}
+                  >
+                    <div className="flex items-center gap-md">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${config.iconWrap}`}>
+                        <span className="material-symbols-outlined text-sm">{config.icon}</span>
+                      </div>
+                      <span className="font-label-md text-label-md">{bucket}</span>
+                    </div>
+                    <div className="flex items-center gap-xs">
+                      <span className={`text-headline-md font-bold ${config.countClass}`}>{bucketReports.length}</span>
+                      <span
+                        className={`material-symbols-outlined text-outline transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      >
+                        expand_more
+                      </span>
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="ml-2 border-l-2 border-outline-variant/20 pl-md flex flex-col gap-xs animate-fade-in">
+                      {bucketReports.length === 0 ? (
+                        <p className="text-xs text-on-surface-variant py-xs">No reports in this bucket.</p>
+                      ) : (
+                        bucketReports.map((report) => (
+                          <button
+                            key={report.id}
+                            onClick={() => report.backendId && navigateToReportDetail(report.backendId)}
+                            className="text-left p-xs rounded-lg hover:bg-surface-container-low transition-colors"
+                          >
+                            <p className="text-label-sm font-semibold text-on-surface truncate">{report.title}</p>
+                            <p className="text-[10px] text-on-surface-variant truncate">{report.location}</p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
-                <span className="font-label-md text-label-md">Reported</span>
-              </div>
-              <span className="text-headline-md font-bold text-primary">{reportedCount}</span>
-            </div>
-
-            {/* In Progress */}
-            <div className="flex items-center justify-between p-sm bg-tertiary-fixed/10 rounded-lg border border-tertiary-fixed/10">
-              <div className="flex items-center gap-md">
-                <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim flex items-center justify-center">
-                  <span className="material-symbols-outlined text-on-tertiary-fixed text-sm">engineering</span>
-                </div>
-                <span className="font-label-md text-label-md">In Progress</span>
-              </div>
-              <span className="text-headline-md font-bold text-tertiary">{progressCount}</span>
-            </div>
-
-            {/* Resolved */}
-            <div className="flex items-center justify-between p-sm bg-secondary-container/30 rounded-lg border border-secondary-container/20">
-              <div className="flex items-center gap-md">
-                <div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center">
-                  <span className="material-symbols-outlined text-on-secondary-container text-sm">check_circle</span>
-                </div>
-                <span className="font-label-md text-label-md">Resolved</span>
-              </div>
-              <span className="text-headline-md font-bold text-secondary">{resolvedCount}</span>
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -128,7 +194,6 @@ export const CitizenDashboard: React.FC = () => {
         <div className="md:col-span-12 bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
           <div className="p-md border-b border-surface-container/60 flex justify-between items-center">
             <h3 className="font-label-md text-label-md">Community Updates</h3>
-            <span className="material-symbols-outlined text-outline cursor-pointer hover:text-on-surface transition-colors">more_horiz</span>
           </div>
           <div className="divide-y divide-surface-container/60">
             {recentUpdates.length === 0 ? (
@@ -136,15 +201,20 @@ export const CitizenDashboard: React.FC = () => {
             ) : recentUpdates.map((report) => (
               <div
                 key={report.id}
-                onClick={() => {
-                  setSelectedReportId(report.id);
-                  setActiveTab('activity');
-                }}
+                onClick={() => (report.backendId ? navigateToReportDetail(report.backendId) : setActiveTab('activity'))}
                 className="p-md hover:bg-surface-container-low transition-colors cursor-pointer flex items-center gap-md"
               >
                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="material-symbols-outlined text-primary">
-                    {report.category === 'ROADS' ? 'edit_road' : report.category === 'UTILITIES' ? 'lightbulb' : 'delete'}
+                    {report.category === 'Road Damage'
+                      ? 'edit_road'
+                      : report.category === 'Street Lighting'
+                      ? 'lightbulb'
+                      : report.category === 'Water Leak'
+                      ? 'water_drop'
+                      : report.category === 'Waste Management'
+                      ? 'delete'
+                      : 'shield'}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
