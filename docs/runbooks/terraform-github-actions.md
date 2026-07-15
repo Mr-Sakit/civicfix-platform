@@ -35,9 +35,11 @@ TFSTATE_RESOURCE_GROUP_NAME=rg-civicfix-tfstate
 TFSTATE_STORAGE_ACCOUNT_NAME=<state-storage-account>
 TFSTATE_CONTAINER_NAME=<state-container>
 TFSTATE_KEY=civicfix-platform/prod/terraform.tfstate
-TF_VAR_AKS_API_SERVER_AUTHORIZED_IP_RANGES=<trusted-cidr-list>
-TF_VAR_KEY_VAULT_ALLOWED_IP_RANGES=<trusted-cidr-list>
+TF_VAR_AKS_API_SERVER_AUTHORIZED_IP_RANGES=<trusted-admin-cidr>
+TF_VAR_KEY_VAULT_ALLOWED_IP_RANGES=<trusted-admin-cidr>
 ```
+
+The workflows wrap these CIDR values as Terraform list inputs, for example `37.61.112.221/32` becomes `["37.61.112.221/32"]`.
 
 GitHub Environment:
 
