@@ -17,7 +17,7 @@ metadata:
       workflow on the main branch.
 spec:
   admission: true
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   emitWarning: false
   webhookTimeoutSeconds: 30
   background: false
