@@ -425,6 +425,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (error instanceof ApiError && error.status === 409 && error.body?.mismatch) {
         return { status: 'mismatch', message: error.body.message ?? 'The photo does not match your description.' };
       }
+
+      if (error instanceof ApiError && error.status === 422) {
+        const body = error.body as { message?: string; data?: { reason?: string } };
+        return {
+          status: 'mismatch',
+          message: body.data?.reason
+            ? `${body.message ?? 'The uploaded photo does not match the report.'} ${body.data.reason}`
+            : body.message ?? 'The uploaded photo does not appear to match this report.',
+        };
+      }
+
+      if (error instanceof ApiError && error.status === 413) {
+        return {
+          status: 'error',
+          message: 'The selected photo is too large to upload. Please choose a smaller image or take a lower-resolution photo.'
+        };
+      }
+
       setIsApiConnected(false);
       return { status: 'error', message: error instanceof Error ? error.message : 'Failed to submit report.' };
     }
