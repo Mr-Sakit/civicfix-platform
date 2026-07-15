@@ -25,3 +25,10 @@ spec:
       - CreateNamespace=true
       - PruneLast=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: kyverno.io
+      kind: ClusterPolicy
+      name: civicfix-verify-signed-images
+      jqPathExpressions:
+        - .spec.rules[].verifyImages[].attestors[].entries[].keyless.signatureAlgorithm
