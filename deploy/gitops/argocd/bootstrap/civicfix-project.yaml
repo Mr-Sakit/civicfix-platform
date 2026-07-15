@@ -11,6 +11,7 @@ spec:
   sourceRepos:
     - git@github.com:Mr-Sakit/civicfix-platform.git
     - https://github.com/Mr-Sakit/civicfix-platform.git
+    - https://kyverno.github.io/kyverno/
   destinations:
     - namespace: "*"
       server: https://kubernetes.default.svc
