@@ -21,6 +21,19 @@ spec:
           install: true
           annotations:
             argocd.argoproj.io/sync-options: Replace=true
+          groups:
+            policies:
+              deletingpolicies: false
+              generatingpolicies: false
+              imagevalidatingpolicies: false
+              mutatingpolicies: false
+              namespaceddeletingpolicies: false
+              namespacedgeneratingpolicies: false
+              namespacedimagevalidatingpolicies: false
+              namespacedmutatingpolicies: false
+              namespacedvalidatingpolicies: false
+              policyexceptions: false
+              validatingpolicies: false
           migration:
             enabled: false
         admissionController:
