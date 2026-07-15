@@ -32,7 +32,4 @@ patches:
     target:
       kind: Deployment
       name: civicfix-frontend
-  - path: postgres-patch.yaml
-    target:
-      kind: StatefulSet
-      name: civicfix-postgres
+  - path: remove-in-cluster-postgres.yaml

@@ -1,46 +1,51 @@
-# ADR-0013: Keep in-cluster PostgreSQL temporarily and plan managed PostgreSQL migration
+# ADR-0013: Use Azure Database for PostgreSQL in production
 
 ## Status
 
-Accepted
+Accepted, updated 2026-07-15
 
 ## Context
 
-CivicFix currently runs PostgreSQL inside the Kubernetes cluster. This keeps the capstone environment simple and affordable, and it avoids extra managed-database cost while the platform is still being iterated.
+CivicFix initially ran PostgreSQL inside the Kubernetes cluster to keep the early capstone environment simple and affordable.
 
 In production and enterprise cloud architectures, stateful data is usually better handled by managed database services because they provide stronger operational guarantees around backups, patching, high availability, monitoring, and recovery.
 
 ## Decision
 
-Temporarily keep the current in-cluster PostgreSQL deployment, but document it as a known tradeoff and keep Azure Database for PostgreSQL as the target architecture.
+Use Azure Database for PostgreSQL Flexible Server for the production environment.
 
-The current production database state is:
+The production database architecture is:
 
-- PostgreSQL runs inside AKS in the `civicfix-prod` namespace.
-- Application data is stored in the in-cluster PostgreSQL service.
-- Azure managed PostgreSQL is the preferred future direction, but schema/data migration is deferred until budget and time allow.
+- Terraform provisions Azure Database for PostgreSQL Flexible Server in a delegated private subnet.
+- Terraform writes the managed database connection string to Azure Key Vault as `civicfix-prod-database-url`.
+- External Secrets Operator syncs that Key Vault value into the Kubernetes `civicfix-app-secret`.
+- Backend and worker deployments read `DATABASE_URL` from the generated Kubernetes Secret.
+- The production Kustomize overlay removes the in-cluster PostgreSQL Service and StatefulSet.
+
+The in-cluster PostgreSQL manifest remains available for local, dev, and constrained demo environments only.
 
 ## Consequences
 
 Positive:
 
-- Lower cost during the capstone build phase.
-- Faster iteration and simpler demo operations.
-- Existing seed/demo data works without extra database networking work.
+- Production state is outside the AKS workload lifecycle.
+- Database patching, backups, and high-availability posture can be handled by Azure.
+- The architecture better matches cloud-native and enterprise expectations.
+- The teacher's Terraform/runtime mismatch is resolved: prod Terraform and prod Kubernetes now target the same managed database model.
 
 Tradeoffs:
 
-- In-cluster database storage is riskier than a managed service.
-- Backup, restore, patching, and high availability need stronger operational design.
-- Cluster teardown or storage misconfiguration could affect stateful data.
+- Managed PostgreSQL adds cost compared with the in-cluster demo database.
+- Database connectivity depends on Azure private networking and Key Vault secret sync.
+- Existing in-cluster data must be migrated when moving a live environment.
 
-## Migration roadmap
+## Migration/runbook
 
-1. Formalize database migrations and seed commands.
-2. Provision Azure Database for PostgreSQL through Terraform.
-3. Apply schema migrations to the managed database.
-4. Export/import or replicate existing data.
-5. Update Azure Key Vault `DATABASE_URL`.
-6. Let External Secrets Operator sync the new database URL into Kubernetes.
-7. Restart backend and worker deployments.
-8. Verify application, metrics, and seed data against the managed database.
+1. Run the gated Terraform plan and apply workflow with `TF_VAR_create_managed_postgres=true`.
+2. Confirm Terraform outputs include a non-null `postgres_fqdn`.
+3. Confirm Azure Key Vault contains `civicfix-prod-database-url`.
+4. Confirm External Secrets Operator syncs `DATABASE_URL` into `civicfix-prod/civicfix-app-secret`.
+5. Apply schema migrations and demo seed data to Azure PostgreSQL.
+6. Sync the production Argo CD application.
+7. Confirm no `civicfix-postgres` Service or StatefulSet exists in `civicfix-prod`.
+8. Smoke-test `/api/health`, `/api/issues`, report creation, and image upload.

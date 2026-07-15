@@ -190,6 +190,15 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+    # Azure Database for PostgreSQL Flexible Server is deployed into the
+    # delegated PostgreSQL subnet by Terraform. Prod uses this path instead of
+    # the in-cluster PostgreSQL StatefulSet.
+    - to:
+        - ipBlock:
+            cidr: 10.40.2.0/24
+      ports:
+        - protocol: TCP
+          port: 5432
     - to:
         - podSelector:
             matchLabels:
