@@ -99,4 +99,4 @@ Only verify key names and sync status. Do not print secret values in terminal ou
 - If secrets do not sync, check the ClusterSecretStore status.
 - If Key Vault access is denied, check workload identity and Key Vault permissions.
 - If pods still use old values, restart the affected deployments after secret rotation.
-- The managed Azure PostgreSQL instance exists, but production currently points `DATABASE_URL` at the in-cluster PostgreSQL service until a schema/data migration is completed.
+- Production `DATABASE_URL` should point to the Azure Database for PostgreSQL value stored in Key Vault as `civicfix-prod-database-url`.

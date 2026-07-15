@@ -1,21 +1,42 @@
 # GitHub Actions
 
-This folder will hold CI/CD workflows.
+This folder contains CivicFix CI/CD, security, and infrastructure automation.
 
-Planned workflows:
+## Workflows
 
-- Frontend checks
-- Backend checks
-- Container image build
-- Security scanning
-- Deployment promotion
-
-Current workflow:
-
-- `ci.yml` validates dependency installation, dependency audit, backend checks, frontend build, and Docker image builds.
-- `ci.yml` also validates that the Kubernetes Kustomize base renders successfully.
-- `container-delivery.yml` builds and publishes backend/frontend images to GitHub Container Registry.
-- `container-delivery.yml` signs the pushed image digests with Sigstore Cosign keyless signing through GitHub OIDC.
+- `ci.yml` validates dependency installation, dependency audit, backend checks, frontend build, container build checks, Kustomize rendering, and Prometheus alert rules.
+- `container-delivery.yml` builds backend/frontend images, publishes them to GHCR, signs image digests with Sigstore Cosign keyless signing, and commits production digest promotion.
 - `security.yml` scans dependency changes, repository configuration, and container images for high/critical security issues.
+- `secret-scanning.yml` runs Gitleaks secret detection.
 - `codeql.yml` runs GitHub CodeQL analysis and uploads results to GitHub Code Scanning.
-- `terraform-plan.yml`, `terraform-apply.yml`, and `terraform-drift.yml` provide PR planning, gated infrastructure apply, and drift detection after Azure OIDC repository settings are configured.
+- `terraform-plan.yml` runs Terraform format/validate/plan for review.
+- `terraform-apply.yml` performs manually approved production infrastructure apply.
+- `terraform-drift.yml` performs scheduled/manual infrastructure drift detection.
+
+## Deployment model
+
+Production deployment is GitOps-driven. GitHub Actions does not directly apply application manifests to AKS.
+
+```text
+GitHub Actions → GHCR → Cosign signing → Git digest promotion → Argo CD → AKS
+```
+
+The delivery workflow updates:
+
+```text
+deploy/kubernetes/overlays/prod/kustomization.yaml
+```
+
+with immutable image digests. Argo CD reconciles the cluster from Git.
+
+## Trigger scope
+
+`container-delivery.yml` runs only for:
+
+```text
+backend/**
+frontend/**
+.github/workflows/container-delivery.yml
+```
+
+This prevents documentation, Terraform-only, and policy-only changes from rebuilding application images.

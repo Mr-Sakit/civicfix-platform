@@ -2,7 +2,7 @@
 
 **CivicFix Platform** is a three-tier community issue reporting and resolution system built by **CubIC ClouD** for an end-to-end DevOps capstone project.
 
-The platform helps residents report local civic problems such as potholes, broken streetlights, water leaks, unsafe sidewalks, overflowing bins, and damaged public facilities. The goal is to give municipality or maintenance teams a practical way to receive, triage, monitor, and resolve community issues.
+The platform helps residents report local civic problems such as potholes, broken streetlights, water leaks, unsafe sidewalks, overflowing bins, and damaged public facilities. City managers can triage reports, monitor activity, and coordinate resolution work.
 
 ## Project meaning
 
@@ -15,75 +15,88 @@ Full project title:
 
 > CivicFix Platform — A Three-Tier Community Issue Reporting and Resolution System
 
-## Current delivery status
-
-CivicFix is no longer only a skeleton application. The project now includes:
-
-- working frontend application;
-- working backend API;
-- PostgreSQL-backed data model and seed data;
-- Redis service foundation;
-- local Docker Compose runtime;
-- container images published through GitHub Container Registry;
-- Kubernetes manifests with Kustomize overlays;
-- live AKS deployment on Azure;
-- Argo CD GitOps deployment;
-- Prometheus and Grafana monitoring;
-- Terraform Azure infrastructure foundation;
-- GitHub Actions CI/CD;
-- CodeQL, Dependabot, Trivy, Gitleaks, and custom secret-history scanning;
-- ADRs, runbooks, and evidence documentation.
-
-## Live demo environment
-
-The current demo environment runs on **Azure Kubernetes Service** in the capstone Azure subscription. Public traffic is routed through an NGINX ingress controller and a static Azure public IP.
-
-Demo endpoints:
+## Live demo
 
 - Frontend: `https://civicfix.tech`
 - Backend API: `https://civicfix.tech/api`
-- Backend issues endpoint: `https://civicfix.tech/api/issues`
+- Issues endpoint: `https://civicfix.tech/api/issues`
 
-Monitoring and GitOps dashboards are intentionally not exposed publicly. They are accessed with `kubectl port-forward` during demo to reduce public attack surface and Azure cost.
+Monitoring and GitOps dashboards are intentionally not exposed publicly. They are accessed with `kubectl port-forward` during operations/demo to reduce attack surface.
+
+## Current platform status
+
+CivicFix includes:
+
+- React/Vite frontend
+- Node.js backend API
+- PostgreSQL data model
+- Redis service foundation
+- Docker Compose local runtime
+- AKS production deployment
+- NGINX ingress and TLS
+- Azure PostgreSQL production database foundation
+- Azure Blob/Queue foundation for asynchronous image processing
+- Azure Key Vault with External Secrets Operator
+- GitHub Actions CI/CD
+- GHCR container images
+- Sigstore Cosign keyless image signing
+- digest-pinned production deployments
+- Argo CD GitOps
+- Prometheus/Grafana monitoring and alerts
+- Kyverno admission control
+- Terraform remote state, gated apply, and drift detection
+- CodeQL, Dependabot, Trivy, and Gitleaks scanning
+- ADRs, runbooks, and evidence documentation
 
 ## Architecture
 
 ```text
-Resident/Admin Browser
-        |
-        v
-Frontend Web App
-        |
-        v
-Backend API
-        |
-        +------ PostgreSQL
-        |
-        +------ Redis
+User Browser
+  → Cloudflare / DNS
+  → NGINX Ingress on AKS
+  → Frontend
+  → Backend API
+  → Azure PostgreSQL / Redis / Blob Storage / Queue
 
-DevOps Platform:
-GitHub Actions → GHCR → AKS ingress → Argo CD → Prometheus/Grafana
-Terraform → Azure Resource Group / AKS / Key Vault / PostgreSQL foundation
+Delivery Platform
+  → GitHub Actions
+  → GHCR image push
+  → Cosign digest signing
+  → Git digest promotion
+  → Argo CD sync
+  → Kyverno admission checks
+  → AKS rollout
+
+Secrets Platform
+  → Azure Key Vault
+  → External Secrets Operator
+  → Kubernetes Secrets
+
+Infrastructure Platform
+  → Terraform plan/apply/drift workflows
+  → Azure Resource Groups / AKS / Key Vault / PostgreSQL / Storage
 ```
 
 ## Technology stack
 
-| Area | Technology | Why we use it |
-| --- | --- | --- |
-| Frontend | React + Vite | Fast lightweight UI for the demo application |
-| Backend | Node.js | Simple API layer with health and metrics endpoints |
-| Database | PostgreSQL | Reliable relational database for structured civic issue data |
-| Cache foundation | Redis | Prepared for caching/session/event-style workloads |
-| Local runtime | Docker Compose | Repeatable local development environment |
-| Containers | Docker | Consistent packaging from local to cloud |
-| Registry | GitHub Container Registry | Integrated image publishing from GitHub Actions |
-| Orchestration | Kubernetes / AKS | Cloud-native deployment and scaling foundation |
-| GitOps | Argo CD | Cluster state is driven from Git |
-| Infrastructure as Code | Terraform | Repeatable Azure infrastructure provisioning |
-| Monitoring | Prometheus + Grafana | Metrics collection and dashboard visibility |
-| CI/CD | GitHub Actions | Automated build, validation, security, and delivery |
-| Security | CodeQL, Dependabot, Trivy, Gitleaks | Code scanning, dependency updates, image/config scans, secret detection |
-| Documentation | ADRs, RFCs, runbooks, evidence docs | Clear technical decision and delivery evidence |
+| Area | Technology |
+| --- | --- |
+| Frontend | React + Vite |
+| Backend | Node.js |
+| Database | PostgreSQL |
+| Cache/service foundation | Redis |
+| Local runtime | Docker Compose |
+| Container registry | GitHub Container Registry |
+| Orchestration | Kubernetes / AKS |
+| Ingress/TLS | NGINX Ingress, cert-manager, Cloudflare DNS/proxy |
+| GitOps | Argo CD |
+| Infrastructure as Code | Terraform |
+| Secrets | Azure Key Vault + External Secrets Operator |
+| Monitoring | Prometheus + Grafana |
+| CI/CD | GitHub Actions |
+| Supply chain | GHCR + Cosign + digest-pinned images + Kyverno |
+| Security scanning | CodeQL, Dependabot, Trivy, Gitleaks |
+| Documentation | ADRs, RFCs, runbooks, evidence docs |
 
 ## Repository structure
 
@@ -91,9 +104,9 @@ Terraform → Azure Resource Group / AKS / Key Vault / PostgreSQL foundation
 civicfix-platform/
 ├── backend/                 # Node.js API
 ├── frontend/                # React/Vite frontend
-├── database/                # Database schema and seed data
+├── database/                # Database notes/schema support
 ├── deploy/
-│   ├── kubernetes/          # Kustomize base and overlays
+│   ├── kubernetes/          # Kustomize base, overlays, monitoring, secrets, Kyverno
 │   └── gitops/              # Argo CD project and application manifests
 ├── infrastructure/
 │   └── terraform/azure/     # Azure Terraform foundation
@@ -103,7 +116,7 @@ civicfix-platform/
 │   ├── evidence/            # Delivery/validation evidence
 │   ├── rfcs/                # RFC templates and future proposals
 │   └── runbooks/            # Operational runbooks
-├── .github/workflows/       # CI/CD and security automation
+├── .github/workflows/       # CI/CD, security, Terraform automation
 ├── docker-compose.yml       # Local development runtime
 ├── SECURITY.md
 └── README.md
@@ -136,24 +149,61 @@ npm run backend:check
 npm run frontend:build
 ```
 
-## Kubernetes and GitOps
+## Production deployment model
 
-The Kubernetes manifests are organized with Kustomize:
+Production is GitOps-driven.
 
-- `deploy/kubernetes/base`
-- `deploy/kubernetes/overlays/dev`
-- `deploy/kubernetes/overlays/prod`
-- `deploy/kubernetes/overlays/aks-student`
-- `deploy/kubernetes/overlays/monitoring-aks-student`
+1. GitHub Actions builds backend/frontend images.
+2. Images are pushed to GHCR with commit-SHA tags as registry references.
+3. The resolved image digests are signed with Cosign keyless signing.
+4. The workflow commits digest references into `deploy/kubernetes/overlays/prod/kustomization.yaml`.
+5. Argo CD reconciles AKS from Git.
+6. Kyverno admits only immutable and signed CivicFix production images.
 
-The production overlay pins frontend and backend deployments to immutable Git commit SHA image tags. The base manifests keep `latest` only as a local/default placeholder; production GitOps should always promote an explicit SHA tag.
+Production image references look like:
 
-Argo CD applications:
+```text
+ghcr.io/mr-sakit/civicfix-backend@sha256:...
+ghcr.io/mr-sakit/civicfix-frontend@sha256:...
+```
 
-- `civicfix-student-application`
-- `civicfix-student-monitoring`
+The base Kubernetes manifests may contain `latest` placeholders for local/default rendering. Production blocks mutable `latest` through Kyverno.
 
-The Student applications remain documented as a low-cost demo path. The current production-style deployment uses the `prod` overlay and static ingress IP foundation.
+## Argo CD applications
+
+Important production/platform applications:
+
+- `civicfix-prod-application`
+- `civicfix-prod-secrets`
+- `civicfix-monitoring`
+- `civicfix-external-secrets-operator`
+- `civicfix-kyverno`
+- `civicfix-kyverno-policies`
+
+## Security posture
+
+Implemented controls include:
+
+- Azure Key Vault + External Secrets Operator
+- GitHub OIDC for Azure access
+- Terraform remote state in Azure Storage
+- gated Terraform apply through GitHub Environments
+- Terraform drift detection
+- Cosign keyless image signing
+- digest-pinned production images
+- Kyverno enforced image immutability and signature verification
+- Kubernetes NetworkPolicies
+- AKS API authorized IP ranges
+- Key Vault network ACLs
+- CodeQL, Dependabot, Trivy, and Gitleaks
+
+Current Kyverno posture:
+
+| Policy | Mode |
+| --- | --- |
+| `civicfix-require-immutable-images` | Enforce |
+| `civicfix-verify-signed-images` | Enforce |
+| `civicfix-pod-security-restricted` | Audit |
 
 ## Monitoring
 
@@ -161,76 +211,46 @@ Monitoring components:
 
 - Prometheus
 - Grafana
-- custom backend metrics endpoint
+- backend `/metrics`
 - dashboard provisioning
-- alerting foundation
+- alert rules
 
-Access during demo:
+Access during operations/demo:
 
 ```powershell
 kubectl -n civicfix-monitoring port-forward svc/civicfix-grafana 3001:3000
 kubectl -n civicfix-monitoring port-forward svc/civicfix-prometheus 9090:9090
 ```
 
-Then open:
+## Terraform and Azure operations
 
-- Grafana: `http://localhost:3001`
-- Prometheus: `http://localhost:9090`
+Infrastructure changes should follow:
 
-## Security and quality
+```text
+Pull Request → Terraform Plan → Review → Merge → Manual Apply with Approval → Drift Detection
+```
 
-The project includes several security layers:
-
-- Dependabot dependency updates
-- CodeQL static analysis
-- Trivy vulnerability and secret scanning
-- Trivy configuration audit
-- Gitleaks secret scanning
-- GitHub Actions pipeline enforcement
-- Azure Key Vault / External Secrets design foundation
-
-Security rules for this repository:
-
-- do not commit Kubernetes Secret manifests;
-- create runtime secrets through `kubectl create secret`, Azure Key Vault, or External Secrets Operator;
-- treat any committed real credential as exposed and rotate it;
-- rewrite public Git history when a real secret is found in reachable commits;
-- keep Trivy and Gitleaks findings visible in CI.
-
-## Azure and cost control
-
-The live environment currently uses the capstone Azure subscription. The earlier Azure Student deployment was destroyed after the demo stage to control cost.
-
-Implemented guardrails:
-
-- small one-node AKS cluster;
-- internal-only monitoring services;
-- `$20` monthly Azure budget alert;
-- reusable Terraform workspace and variable model;
-- Terraform destroy/runbook path for stopping resources.
-
-The same Terraform and GitOps workflow can be recreated in another subscription with adjusted variables.
+Terraform remote state is stored in Azure Storage under the dedicated tfstate resource group.
 
 ## Documentation map
-
-Useful starting points:
 
 - [Project stages](docs/project-stages.md)
 - [Capstone readiness checklist](docs/capstone-readiness-checklist.md)
 - [Architecture docs](docs/architecture/README.md)
 - [ADRs](docs/decisions/README.md)
+- [CI/CD runbook](docs/runbooks/ci-cd.md)
+- [Admission control runbook](docs/runbooks/admission-control.md)
+- [Terraform through GitHub Actions](docs/runbooks/terraform-github-actions.md)
 - [Runbooks](docs/runbooks/README.md)
 - [Evidence docs](docs/evidence/)
 
-## Known demo tradeoffs
+## Known tradeoffs
 
-Some choices are intentional for the Student/demo environment:
-
-- Cloudflare currently provides public HTTPS for the temporary domain; origin-side TLS automation remains a hardening task.
-- PostgreSQL currently runs in-cluster for the Student demo because managed PostgreSQL hit Azure Student capacity restrictions.
-- Azure managed PostgreSQL is provisioned by Terraform for the production-style environment, but the Kubernetes app still needs a final cutover from in-cluster PostgreSQL.
-- Monitoring and Argo CD are accessed through port-forwarding rather than public exposure.
-- Trivy configuration audit findings remain visible as hardening backlog.
+- Monitoring and Argo CD are not publicly exposed.
+- Redis remains in-cluster as a lightweight service foundation.
+- Pod Security is still Audit mode while enforcement readiness is reviewed.
+- Trivy vulnerability/configuration findings remain visible as hardening backlog.
+- The Kyverno controller Argo CD app can show upstream CRD drift, while the Kyverno controllers and CivicFix policy app are healthy.
 
 ## Team
 

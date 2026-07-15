@@ -6,53 +6,50 @@ Accepted
 
 ## Context
 
-CivicFix deploys container images to AKS through GitOps. CI already builds and scans images, but production-grade Kubernetes platforms should also verify what is admitted into the cluster.
+CivicFix deploys container images to AKS through GitOps. CI builds and scans images, but production-grade Kubernetes platforms should also verify exactly what is admitted into the cluster.
 
-The project needs a clear control for:
+The project needs controls for:
 
-- preventing unsafe Pod security settings;
-- discouraging mutable `latest` image tags in production;
-- proving that application images were produced by the trusted GitHub Actions delivery workflow.
+- preventing mutable production image references;
+- proving application images were produced by the trusted GitHub Actions delivery workflow;
+- auditing Pod Security Standard compliance.
 
 ## Decision
 
-CivicFix will use:
+CivicFix uses:
 
 - **Sigstore Cosign keyless signing** in the container delivery workflow;
+- **digest-pinned production image references** in the production Kustomize overlay;
 - **Kyverno admission policies** for production Kubernetes admission checks;
-- **Audit mode first**, then enforcement after the team verifies policy reports and confirms the currently deployed images are signed.
+- **enforcement** for immutable and signed CivicFix production images;
+- **audit mode** for restricted Pod Security until all workloads and operational pod patterns are ready.
 
-The container delivery workflow signs backend and frontend image digests after pushing them to GHCR. The Kyverno policy set lives in:
+Current policy modes:
 
-```text
-deploy/kubernetes/admission/kyverno-policies
-```
-
-The first policy set audits:
-
-- restricted Kubernetes Pod Security Standard compliance;
-- use of mutable `:latest` image tags;
-- CivicFix application image signatures from the trusted GitHub Actions workflow identity.
+- `civicfix-require-immutable-images`: `Enforce`
+- `civicfix-verify-signed-images`: `Enforce`
+- `civicfix-pod-security-restricted`: `Audit`
 
 ## Consequences
 
 Positive:
 
 - strengthens the CI/CD supply chain;
-- creates evidence for admission controls without immediately risking downtime;
-- supports later enforcement once signed images are promoted.
+- makes production releases reproducible by digest;
+- blocks unsigned or mutable production application images;
+- creates admission-control evidence for the capstone.
 
 Tradeoffs:
 
-- Kyverno must be installed in the cluster before these policies can run;
-- existing images built before this decision may not have signatures;
-- enforcement should be enabled only after policy reports are reviewed.
+- Kyverno must remain healthy for production admissions;
+- emergency image rollbacks must use signed digest references;
+- Pod Security enforcement remains a separate hardening step.
 
-## Enforcement roadmap
+## Enforcement history
 
-1. Keep policies in `Audit` mode.
-2. Install Kyverno in AKS.
-3. Run the container delivery workflow so GHCR images are signed.
-4. Promote signed commit-SHA images through GitOps.
-5. Review Kyverno policy reports.
-6. Change `validationFailureAction` from `Audit` to `Enforce` when the reports are clean.
+1. Installed Kyverno through Argo CD.
+2. Added policies in Audit mode.
+3. Enforced immutable production images.
+4. Updated delivery workflow to sign and promote image digests.
+5. Verified signature admission with a digest-pinned image.
+6. Enforced signed production images.

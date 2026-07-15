@@ -4,63 +4,77 @@ This runbook describes the CivicFix admission-control model for AKS.
 
 ## Current state
 
-The repository contains Kyverno policies under:
+Kyverno and the policy set are installed through Argo CD:
+
+```text
+deploy/gitops/argocd/apps/civicfix-kyverno.yaml
+deploy/gitops/argocd/apps/civicfix-kyverno-policies.yaml
+```
+
+Policy manifests live in:
 
 ```text
 deploy/kubernetes/admission/kyverno-policies
 ```
 
-The policies are intentionally configured with:
-
-```yaml
-validationFailureAction: Audit
-```
-
-Audit mode is the safe first stage. It lets the team collect policy evidence without accidentally blocking production rollouts.
-
 ## Policy scope
 
-The current policies target the production namespace:
+The policies target the production namespace:
 
 ```text
 civicfix-prod
 ```
 
-They audit:
+Current modes:
 
-- restricted Pod Security Standard compliance;
-- mutable `:latest` image tags;
-- Sigstore/Cosign signatures for CivicFix GHCR application images.
+| Policy | Mode | Notes |
+| --- | --- | --- |
+| `civicfix-require-immutable-images` | Enforce | Blocks production Pods using `:latest` |
+| `civicfix-verify-signed-images` | Enforce | Requires signed CivicFix GHCR image digests |
+| `civicfix-pod-security-restricted` | Audit | Reports restricted Pod Security Standard gaps |
 
-## Installation flow
+## Verification commands
 
-1. Install Kyverno in the AKS cluster.
-2. Apply the policy set:
+Confirm Argo CD state:
 
 ```powershell
-kubectl apply -k deploy/kubernetes/admission/kyverno-policies
+kubectl -n argocd get applications civicfix-kyverno civicfix-kyverno-policies
 ```
 
-3. Confirm policies exist:
+Confirm policies:
 
 ```powershell
 kubectl get clusterpolicy
 ```
 
-4. Review policy reports:
+Review policy reports:
 
 ```powershell
 kubectl get policyreport -A
 kubectl get clusterpolicyreport
 ```
 
-## Promotion to enforcement
+## Supply-chain enforcement
 
-Only move from `Audit` to `Enforce` after:
+Production images are built and signed in GitHub Actions, then deployed by digest through Argo CD. The signature policy verifies the image was signed by the trusted GitHub Actions workflow identity:
 
-- the current production images are signed;
-- production manifests use immutable commit-SHA image tags;
-- policy reports show no blocking violations;
-- the team has tested at least one full GitOps rollout.
+```text
+https://github.com/Mr-Sakit/civicfix-platform/.github/workflows/container-delivery.yml@refs/heads/main
+```
 
-The enforcement change should be made through a pull request.
+Production image references must use digests:
+
+```text
+ghcr.io/mr-sakit/civicfix-backend@sha256:...
+ghcr.io/mr-sakit/civicfix-frontend@sha256:...
+```
+
+## Pod Security roadmap
+
+Keep `civicfix-pod-security-restricted` in Audit until:
+
+- all application workloads pass restricted checks;
+- operational smoke-test Pods include restricted security contexts;
+- the team confirms there are no required exceptions.
+
+The enforcement change should be made through a reviewed GitOps commit.
