@@ -6,6 +6,55 @@ import { isNativeApp, takePhoto } from '../../services/nativeCamera';
 import { getCurrentFix } from '../../services/nativeGeolocation';
 import type { AddReportResult } from '../../context/AppContext';
 
+const maxUploadBytes = 10 * 1024 * 1024;
+const maxCompressedImageBytes = 2.5 * 1024 * 1024;
+const maxImageDimension = 1600;
+
+const canvasToDataUrl = (canvas: HTMLCanvasElement, quality: number): string =>
+  canvas.toDataURL('image/jpeg', quality);
+
+const compressImageForUpload = (file: File): Promise<{ dataUrl: string; fileName: string }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error('Could not process the selected image.'));
+      image.onload = () => {
+        const scale = Math.min(1, maxImageDimension / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('Could not prepare the image for upload.'));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+
+        let quality = 0.82;
+        let dataUrl = canvasToDataUrl(canvas, quality);
+
+        while (dataUrl.length * 0.75 > maxCompressedImageBytes && quality > 0.45) {
+          quality -= 0.08;
+          dataUrl = canvasToDataUrl(canvas, quality);
+        }
+
+        const safeName = file.name.replace(/\.(png|jpe?g|webp)$/i, '') || 'issue-photo';
+        resolve({ dataUrl, fileName: `${safeName}.jpg` });
+      };
+      image.src = String(reader.result);
+    };
+
+    reader.readAsDataURL(file);
+  });
+};
+
 export const ReportIssueWizard: React.FC = () => {
   const {
     addReport,
@@ -92,35 +141,35 @@ export const ReportIssueWizard: React.FC = () => {
     if (fileInput) fileInput.click();
   };
 
-  const uploadRealImage = (file: File) => {
+  const uploadRealImage = async (file: File) => {
     if (isUploading) return;
     if (!file.type.startsWith('image/')) return;
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > maxUploadBytes) {
       alert('Please choose an image smaller than 10MB.');
       return;
     }
 
     setIsUploading(true);
     setUploadFileName(file.name);
-    setSelectedImageName(file.name);
     setLocalProgress(0);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      addWizardPhoto(String(reader.result));
-    };
-    reader.readAsDataURL(file);
 
     const interval = setInterval(() => {
       setLocalProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          return 100;
-        }
-        return Math.min(100, prev + 20);
+        return Math.min(95, prev + 12);
       });
     }, 120);
+
+    try {
+      const compressed = await compressImageForUpload(file);
+      addWizardPhoto(compressed.dataUrl);
+      setSelectedImageName(compressed.fileName);
+      setLocalProgress(100);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Could not prepare the image for upload.');
+    } finally {
+      clearInterval(interval);
+      setIsUploading(false);
+    }
   };
 
   const handleNextStep = () => {
