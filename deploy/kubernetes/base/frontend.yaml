@@ -32,12 +32,16 @@ spec:
         app.kubernetes.io/name: civicfix-frontend
         app.kubernetes.io/part-of: civicfix-platform
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: frontend
           image: ghcr.io/mr-sakit/civicfix-frontend:latest
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000

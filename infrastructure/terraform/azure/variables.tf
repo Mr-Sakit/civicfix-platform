@@ -81,6 +81,16 @@ variable "aks_node_resource_group_name" {
   default     = null
 }
 
+variable "aks_api_server_authorized_ip_ranges" {
+  description = "CIDR ranges allowed to access the AKS API server. Production should restrict this to trusted admin/VPN/GitHub runner egress IPs."
+  type        = list(string)
+}
+
+variable "key_vault_allowed_ip_ranges" {
+  description = "Public CIDR ranges allowed to reach Azure Key Vault. Production should restrict this to trusted admin/VPN/GitHub runner egress IPs."
+  type        = list(string)
+}
+
 variable "create_ingress_public_ip" {
   description = "Create a static public IP address for the Kubernetes ingress controller."
   type        = bool

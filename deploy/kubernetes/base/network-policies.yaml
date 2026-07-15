@@ -1,0 +1,233 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-default-deny-ingress
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-default-deny-egress
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-ingress-to-frontend
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-ingress-to-backend
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-frontend
+      ports:
+        - protocol: TCP
+          port: 4000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 4000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-ingress-to-worker-metrics
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-ai-worker
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9100
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-ingress-to-postgres
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-backend
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-ai-worker
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-ingress-to-redis
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: civicfix-redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-backend
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-ai-worker
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-app-egress
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - civicfix-backend
+          - civicfix-ai-worker
+          - civicfix-frontend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-backend
+      ports:
+        - protocol: TCP
+          port: 4000
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: civicfix-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: civicfix-allow-stateful-egress
+  labels:
+    app.kubernetes.io/name: civicfix-network-policy
+    app.kubernetes.io/part-of: civicfix-platform
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - civicfix-postgres
+          - civicfix-redis
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

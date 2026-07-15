@@ -1,0 +1,8 @@
+# Accepted monitoring exception:
+# node-exporter requires read-only hostPath mounts for /proc, /sys, and /
+# to expose node-level infrastructure metrics. Compensating controls are set in
+# deploy/kubernetes/monitoring/node-exporter.yaml: no hostNetwork, no hostPID,
+# runAsNonRoot, RuntimeDefault seccomp, read-only mounts, no privilege escalation,
+# and all Linux capabilities dropped.
+AVD-KSV-0121
+KSV-0121

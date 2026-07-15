@@ -80,8 +80,13 @@ resource "azurerm_kubernetes_cluster" "main" {
   kubernetes_version  = var.aks_kubernetes_version
   node_resource_group = local.aks_node_resource_group_name
 
-  oidc_issuer_enabled       = true
-  workload_identity_enabled = true
+  oidc_issuer_enabled               = true
+  workload_identity_enabled         = true
+  role_based_access_control_enabled = true
+
+  api_server_access_profile {
+    authorized_ip_ranges = var.aks_api_server_authorized_ip_ranges
+  }
 
   default_node_pool {
     name                 = "system"
@@ -143,15 +148,23 @@ resource "azurerm_federated_identity_credential" "external_secrets" {
 }
 
 resource "azurerm_key_vault" "main" {
-  name                       = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
-  location                   = azurerm_resource_group.main.location
-  resource_group_name        = azurerm_resource_group.main.name
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
-  sku_name                   = "standard"
-  soft_delete_retention_days = 7
-  purge_protection_enabled   = false
-  rbac_authorization_enabled = true
-  tags                       = local.common_tags
+  name                          = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  location                      = azurerm_resource_group.main.location
+  resource_group_name           = azurerm_resource_group.main.name
+  tenant_id                     = data.azurerm_client_config.current.tenant_id
+  sku_name                      = "standard"
+  soft_delete_retention_days    = 7
+  purge_protection_enabled      = false
+  rbac_authorization_enabled    = true
+  public_network_access_enabled = true
+  tags                          = local.common_tags
+
+  network_acls {
+    bypass                     = "AzureServices"
+    default_action             = "Deny"
+    ip_rules                   = var.key_vault_allowed_ip_ranges
+    virtual_network_subnet_ids = [azurerm_subnet.aks.id]
+  }
 }
 
 resource "azurerm_role_assignment" "current_user_key_vault_secrets_officer" {
