@@ -105,6 +105,9 @@ jobs:
           context: ./frontend
           load: true
           tags: civicfix-frontend:security
+          build-args: |
+            VITE_API_BASE_URL=
+            VITE_GOOGLE_MAPS_API_KEY=security-scan-placeholder
 
       - name: Scan frontend image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0

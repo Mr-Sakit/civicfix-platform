@@ -59,6 +59,9 @@ jobs:
           context: ./frontend
           push: false
           tags: civicfix-frontend:ci
+          build-args: |
+            VITE_API_BASE_URL=
+            VITE_GOOGLE_MAPS_API_KEY=ci-placeholder
 
   kubernetes-validation:
     name: Kubernetes manifest validation
