@@ -38,6 +38,12 @@ variable "manage_generated_key_vault_secrets" {
   default     = true
 }
 
+variable "key_vault_secrets_officer_object_id" {
+  description = "Object ID that should receive Key Vault Secrets Officer. Leave null to use the Terraform caller for new environments."
+  type        = string
+  default     = null
+}
+
 variable "address_space" {
   description = "Virtual network address space."
   type        = list(string)

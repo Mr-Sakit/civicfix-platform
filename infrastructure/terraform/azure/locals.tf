@@ -1,5 +1,9 @@
 locals {
   resource_suffix = var.resource_suffix != null ? var.resource_suffix : random_string.suffix[0].result
+  key_vault_secrets_officer_object_id = coalesce(
+    var.key_vault_secrets_officer_object_id,
+    data.azurerm_client_config.current.object_id
+  )
 
   name_prefix = lower(replace("${var.project_name}-${var.environment}", "_", "-"))
   aks_node_resource_group_name = coalesce(

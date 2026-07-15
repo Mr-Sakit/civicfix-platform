@@ -80,6 +80,7 @@ jobs:
           TF_VAR_environment: prod
           TF_VAR_resource_suffix: 18j6j6
           TF_VAR_manage_generated_key_vault_secrets: "false"
+          TF_VAR_key_vault_secrets_officer_object_id: 33529261-735a-4358-8b35-c274a625528b
           TF_VAR_create_managed_postgres: "true"
           TF_VAR_aks_api_server_authorized_ip_ranges: '["${{ vars.TF_VAR_AKS_API_SERVER_AUTHORIZED_IP_RANGES }}"]'
           TF_VAR_key_vault_allowed_ip_ranges: '["${{ vars.TF_VAR_KEY_VAULT_ALLOWED_IP_RANGES }}"]'

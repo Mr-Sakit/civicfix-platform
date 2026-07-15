@@ -37,6 +37,7 @@ TFSTATE_CONTAINER_NAME=<state-container>
 TFSTATE_KEY=civicfix-platform/prod/terraform.tfstate
 TF_VAR_RESOURCE_SUFFIX=18j6j6
 TF_VAR_MANAGE_GENERATED_KEY_VAULT_SECRETS=false
+TF_VAR_KEY_VAULT_SECRETS_OFFICER_OBJECT_ID=<key-vault-admin-object-id>
 TF_VAR_AKS_API_SERVER_AUTHORIZED_IP_RANGES=<trusted-admin-cidr>
 TF_VAR_KEY_VAULT_ALLOWED_IP_RANGES=<trusted-admin-cidr>
 ```

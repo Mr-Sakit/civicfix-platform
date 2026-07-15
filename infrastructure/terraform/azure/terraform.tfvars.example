@@ -10,6 +10,10 @@ resource_suffix = null
 # exist and should not be copied into Terraform state.
 manage_generated_key_vault_secrets = true
 
+# Leave null for new environments. For imported environments, set this to the
+# existing Key Vault administrator object ID to avoid role-assignment churn.
+key_vault_secrets_officer_object_id = null
+
 aks_node_count   = 1
 aks_node_vm_size = "Standard_D2s_v3"
 
