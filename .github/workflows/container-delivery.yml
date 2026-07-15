@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - deploy/kubernetes/overlays/prod/kustomization.yaml
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
   packages: write
 
@@ -24,6 +26,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -44,9 +48,7 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          tags: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
 
       - name: Build and publish frontend image
         id: build-frontend
@@ -54,9 +56,7 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          tags: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
 
       - name: Sign backend image digest
         env:
@@ -67,3 +67,53 @@ jobs:
         env:
           COSIGN_YES: "true"
         run: cosign sign "${{ env.FRONTEND_IMAGE }}@${{ steps.build-frontend.outputs.digest }}"
+
+      - name: Promote signed digests to production overlay
+        env:
+          BACKEND_DIGEST: ${{ steps.build-backend.outputs.digest }}
+          FRONTEND_DIGEST: ${{ steps.build-frontend.outputs.digest }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+
+          path = Path("deploy/kubernetes/overlays/prod/kustomization.yaml")
+          replacements = {
+              "ghcr.io/mr-sakit/civicfix-backend": os.environ["BACKEND_DIGEST"],
+              "ghcr.io/mr-sakit/civicfix-frontend": os.environ["FRONTEND_DIGEST"],
+          }
+
+          lines = path.read_text(encoding="utf-8").splitlines()
+          output = []
+          active_image = None
+
+          for line in lines:
+              stripped = line.strip()
+              if stripped.startswith("- name: "):
+                  active_image = stripped.removeprefix("- name: ").strip()
+                  output.append(line)
+                  continue
+
+              if active_image in replacements and (
+                  stripped.startswith("newTag:")
+                  or stripped.startswith("digest:")
+              ):
+                  output.append(f"    digest: {replacements[active_image]}")
+                  continue
+
+              output.append(line)
+
+          path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit production digest promotion
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/kubernetes/overlays/prod/kustomization.yaml
+          if git diff --cached --quiet; then
+            echo "Production overlay already references these image digests."
+            exit 0
+          fi
+          git commit -m "Promote signed production image digests [skip ci]"
+          git push

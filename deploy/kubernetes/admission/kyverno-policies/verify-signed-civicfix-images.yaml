@@ -34,7 +34,9 @@ spec:
       verifyImages:
         - imageReferences:
             - "ghcr.io/mr-sakit/civicfix-backend:*"
+            - "ghcr.io/mr-sakit/civicfix-backend@sha256:*"
             - "ghcr.io/mr-sakit/civicfix-frontend:*"
+            - "ghcr.io/mr-sakit/civicfix-frontend@sha256:*"
           mutateDigest: false
           verifyDigest: true
           useCache: true
