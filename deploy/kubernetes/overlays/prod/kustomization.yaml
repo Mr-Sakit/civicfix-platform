@@ -11,9 +11,9 @@ resources:
 
 images:
   - name: ghcr.io/mr-sakit/civicfix-backend
-    newTag: a6fdd0eb2e5defda77a72dfc0f86cd3de174c716
+    newTag: ed0fc37c4c82a55dcd5e1286709a396ea246e4bb
   - name: ghcr.io/mr-sakit/civicfix-frontend
-    newTag: a6fdd0eb2e5defda77a72dfc0f86cd3de174c716
+    newTag: ed0fc37c4c82a55dcd5e1286709a396ea246e4bb
 
 patches:
   - path: namespace-patch.yaml
