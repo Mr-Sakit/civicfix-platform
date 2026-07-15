@@ -30,5 +30,5 @@ spec:
     - group: kyverno.io
       kind: ClusterPolicy
       name: civicfix-verify-signed-images
-      jqPathExpressions:
-        - .spec.rules[].verifyImages[].attestors[].entries[].keyless.signatureAlgorithm
+      jsonPointers:
+        - /spec/rules/0/verifyImages/0/attestors/0/entries/0/keyless/signatureAlgorithm
