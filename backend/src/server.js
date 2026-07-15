@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
@@ -8,20 +9,12 @@ import { sendStoredImage } from "./imageResponse.js";
 import { observeHttpRequest, registry } from "./metrics.js";
 import { ensureQueueReady } from "./queue.js";
 import { ensureStorageReady, loadImageObject, saveImageObject } from "./storage.js";
-import { hashPassword, isCompanyEmail, requireAuth, requireRole, signToken, verifyPassword } from "./auth.js";
+import { hashPassword, requireAuth, requireRole, signToken, verifyPassword } from "./auth.js";
 import { categorizeIssue, compareBeforeAfterPhotos, comparePhotoSimilarity, matchPhotoToDescription } from "./gemini.js";
 
 const app = express();
 
 app.set("trust proxy", 1);
-
-const KNOWN_CATEGORIES = [
-  "Road Damage",
-  "Street Lighting",
-  "Waste Management",
-  "Water Leak",
-  "Public Safety"
-];
 
 const ISSUE_SELECT = `
   SELECT
@@ -116,6 +109,41 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "12mb" }));
 app.use(observeHttpRequest);
+
+const createJsonRateLimit = ({ windowMs, limit, message }) =>
+  rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: { message }
+  });
+
+const apiRateLimit = createJsonRateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  message: "Too many API requests. Please wait a moment and try again."
+});
+
+const authRateLimit = createJsonRateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 25,
+  message: "Too many authentication attempts. Please wait and try again."
+});
+
+const writeRateLimit = createJsonRateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  message: "Too many update requests. Please wait a moment and try again."
+});
+
+const uploadRateLimit = createJsonRateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  message: "Too many image or report submissions. Please wait and try again."
+});
+
+app.use("/api", apiRateLimit);
 
 // Serves the built Android APK for the landing page's "Download App" section.
 app.use("/downloads", express.static(path.join(__dirname, "../public/downloads")));
@@ -353,7 +381,7 @@ const buildAuthResponse = (userRow) => ({
   })
 });
 
-app.post("/api/auth/login", async (request, response, next) => {
+app.post("/api/auth/login", authRateLimit, async (request, response, next) => {
   try {
     const email = String(request.body.email ?? "").trim().toLowerCase();
     const password = String(request.body.password ?? "");
@@ -392,13 +420,11 @@ app.post("/api/auth/login", async (request, response, next) => {
   }
 });
 
-app.post("/api/auth/signup", async (request, response, next) => {
+app.post("/api/auth/signup", authRateLimit, async (request, response, next) => {
   try {
     const fullName = String(request.body.fullName ?? "").trim();
     const email = String(request.body.email ?? "").trim().toLowerCase();
     const password = String(request.body.password ?? "");
-    const role = String(request.body.role ?? "citizen");
-    const teamId = request.body.teamId ? Number(request.body.teamId) : null;
 
     if (!fullName || !email || password.length < 8) {
       return response.status(400).json({
@@ -406,27 +432,6 @@ app.post("/api/auth/signup", async (request, response, next) => {
       });
     }
 
-    if (!["citizen", "admin", "crew"].includes(role)) {
-      return response.status(400).json({ message: "role must be citizen, admin, or crew" });
-    }
-
-    if (role !== "citizen" && !isCompanyEmail(email)) {
-      return response.status(400).json({
-        message: "Admin and crew accounts require a @civicfix.local company email"
-      });
-    }
-
-    if (role === "crew") {
-      if (!Number.isInteger(teamId)) {
-        return response.status(400).json({ message: "Crew signup requires a teamId" });
-      }
-      const team = await query("SELECT id FROM teams WHERE id = $1", [teamId]);
-      if (team.rowCount === 0) {
-        return response.status(400).json({ message: "Selected team does not exist" });
-      }
-    }
-
-    const roleName = FRONTEND_ROLE_TO_ROLE_NAME[role];
     const passwordHash = await hashPassword(password);
 
     const inserted = await query(
@@ -436,7 +441,7 @@ app.post("/api/auth/signup", async (request, response, next) => {
         FROM roles WHERE roles.name = $5
         RETURNING id
       `,
-      [fullName, email, passwordHash, role === "crew" ? teamId : null, roleName]
+      [fullName, email, passwordHash, null, FRONTEND_ROLE_TO_ROLE_NAME.citizen]
     );
 
     const created = await query(
@@ -722,7 +727,7 @@ const lookupCategoryId = async (categoryName) => {
   return fallback.rows[0].id;
 };
 
-app.post("/api/issues/duplicate-check", requireAuth, async (request, response, next) => {
+app.post("/api/issues/duplicate-check", uploadRateLimit, requireAuth, async (request, response, next) => {
   try {
     const { latitude, longitude, categoryId, title, description, imageDataUrl } = request.body;
 
@@ -747,7 +752,7 @@ app.post("/api/issues/duplicate-check", requireAuth, async (request, response, n
   }
 });
 
-app.post("/api/issues", requireAuth, async (request, response, next) => {
+app.post("/api/issues", uploadRateLimit, requireAuth, async (request, response, next) => {
   try {
     const { title, description, address, latitude, longitude, imageDataUrl, imageName } = request.body;
 
@@ -841,7 +846,7 @@ app.post("/api/issues", requireAuth, async (request, response, next) => {
   }
 });
 
-app.patch("/api/issues/:id/assignment", requireAuth, requireRole("admin"), async (request, response, next) => {
+app.patch("/api/issues/:id/assignment", writeRateLimit, requireAuth, requireRole("admin"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     const teamId = Number(request.body.teamId);
@@ -894,7 +899,7 @@ app.patch("/api/issues/:id/assignment", requireAuth, requireRole("admin"), async
   }
 });
 
-app.patch("/api/issues/:id/review", requireAuth, requireRole("admin"), async (request, response, next) => {
+app.patch("/api/issues/:id/review", writeRateLimit, requireAuth, requireRole("admin"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     if (!Number.isInteger(issueId)) {
@@ -919,7 +924,7 @@ app.patch("/api/issues/:id/review", requireAuth, requireRole("admin"), async (re
   }
 });
 
-app.patch("/api/issues/:id/watch", requireAuth, async (request, response, next) => {
+app.patch("/api/issues/:id/watch", writeRateLimit, requireAuth, async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     if (!Number.isInteger(issueId)) {
@@ -936,7 +941,7 @@ app.patch("/api/issues/:id/watch", requireAuth, async (request, response, next) 
   }
 });
 
-app.patch("/api/issues/:id/archive", requireAuth, requireRole("admin"), async (request, response, next) => {
+app.patch("/api/issues/:id/archive", writeRateLimit, requireAuth, requireRole("admin"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     const archived = request.body.archived !== false;
@@ -962,7 +967,7 @@ app.patch("/api/issues/:id/archive", requireAuth, requireRole("admin"), async (r
   }
 });
 
-app.delete("/api/issues/:id", requireAuth, async (request, response, next) => {
+app.delete("/api/issues/:id", writeRateLimit, requireAuth, async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     if (!Number.isInteger(issueId)) {
@@ -987,7 +992,7 @@ app.delete("/api/issues/:id", requireAuth, async (request, response, next) => {
   }
 });
 
-app.patch("/api/issues/:id/crew-accept", requireAuth, requireRole("crew"), async (request, response, next) => {
+app.patch("/api/issues/:id/crew-accept", writeRateLimit, requireAuth, requireRole("crew"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     if (!Number.isInteger(issueId)) {
@@ -1025,7 +1030,7 @@ app.patch("/api/issues/:id/crew-accept", requireAuth, requireRole("crew"), async
   }
 });
 
-app.patch("/api/issues/:id/crew-resolve", requireAuth, requireRole("crew"), async (request, response, next) => {
+app.patch("/api/issues/:id/crew-resolve", uploadRateLimit, requireAuth, requireRole("crew"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     const { afterImageDataUrl, afterImageName } = request.body;
@@ -1139,7 +1144,7 @@ app.patch("/api/issues/:id/crew-resolve", requireAuth, requireRole("crew"), asyn
   }
 });
 
-app.patch("/api/issues/:id/approve-fix", requireAuth, requireRole("admin"), async (request, response, next) => {
+app.patch("/api/issues/:id/approve-fix", writeRateLimit, requireAuth, requireRole("admin"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     if (!Number.isInteger(issueId)) {
@@ -1177,7 +1182,7 @@ app.patch("/api/issues/:id/approve-fix", requireAuth, requireRole("admin"), asyn
   }
 });
 
-app.get("/api/notifications", requireAuth, async (request, response, next) => {
+app.get("/api/notifications", writeRateLimit, requireAuth, async (request, response, next) => {
   try {
     const result = await query(
       `SELECT id, issue_id, type, message, is_read, created_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
@@ -1190,7 +1195,7 @@ app.get("/api/notifications", requireAuth, async (request, response, next) => {
   }
 });
 
-app.patch("/api/notifications/mark-all-read", requireAuth, async (request, response, next) => {
+app.patch("/api/notifications/mark-all-read", writeRateLimit, requireAuth, async (request, response, next) => {
   try {
     await query(`UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE`, [request.user.id]);
     response.json({ data: { success: true } });
@@ -1240,7 +1245,7 @@ const ALLOWED_STATUSES = [
   "rejected_mismatch"
 ];
 
-app.patch("/api/issues/:id/status", requireAuth, requireRole("admin"), async (request, response, next) => {
+app.patch("/api/issues/:id/status", writeRateLimit, requireAuth, requireRole("admin"), async (request, response, next) => {
   try {
     const issueId = Number(request.params.id);
     const { status, note } = request.body;
