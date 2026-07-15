@@ -2,6 +2,14 @@ project_name = "civicfix"
 environment  = "dev"
 location     = "swedencentral"
 
+# Set for existing environments imported into Terraform state. Leave null for
+# fresh environments to use a generated suffix.
+resource_suffix = null
+
+# Disable for imported environments where Key Vault secret values already
+# exist and should not be copied into Terraform state.
+manage_generated_key_vault_secrets = true
+
 aks_node_count   = 1
 aks_node_vm_size = "Standard_D2s_v3"
 

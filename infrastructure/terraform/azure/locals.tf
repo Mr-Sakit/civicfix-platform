@@ -1,4 +1,6 @@
 locals {
+  resource_suffix = var.resource_suffix != null ? var.resource_suffix : random_string.suffix[0].result
+
   name_prefix = lower(replace("${var.project_name}-${var.environment}", "_", "-"))
   aks_node_resource_group_name = coalesce(
     var.aks_node_resource_group_name,
@@ -16,7 +18,7 @@ locals {
   )
 
   storage_account_name = substr(
-    lower("st${replace(var.project_name, "-", "")}${var.environment}${random_string.suffix.result}"),
+    lower("st${replace(var.project_name, "-", "")}${var.environment}${local.resource_suffix}"),
     0,
     24
   )

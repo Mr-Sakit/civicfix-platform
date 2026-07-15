@@ -1,12 +1,16 @@
 data "azurerm_client_config" "current" {}
 
 resource "random_string" "suffix" {
+  count = var.resource_suffix == null ? 1 : 0
+
   length  = 6
   upper   = false
   special = false
 }
 
 resource "random_password" "postgres_admin" {
+  count = var.manage_generated_key_vault_secrets ? 1 : 0
+
   length           = 24
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
@@ -19,7 +23,7 @@ resource "azurerm_resource_group" "main" {
 }
 
 resource "azurerm_virtual_network" "main" {
-  name                = "vnet-${local.name_prefix}-${random_string.suffix.result}"
+  name                = "vnet-${local.name_prefix}-${local.resource_suffix}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   address_space       = var.address_space
@@ -31,6 +35,7 @@ resource "azurerm_subnet" "aks" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = var.aks_subnet_address_prefixes
+  service_endpoints    = ["Microsoft.KeyVault"]
 }
 
 resource "azurerm_subnet" "postgres" {
@@ -73,10 +78,10 @@ resource "azurerm_user_assigned_identity" "external_secrets" {
 }
 
 resource "azurerm_kubernetes_cluster" "main" {
-  name                = "aks-${local.name_prefix}-${random_string.suffix.result}"
+  name                = "aks-${local.name_prefix}-${local.resource_suffix}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  dns_prefix          = "aks-${local.name_prefix}-${random_string.suffix.result}"
+  dns_prefix          = "aks-${local.name_prefix}-${local.resource_suffix}"
   kubernetes_version  = var.aks_kubernetes_version
   node_resource_group = local.aks_node_resource_group_name
 
@@ -148,7 +153,7 @@ resource "azurerm_federated_identity_credential" "external_secrets" {
 }
 
 resource "azurerm_key_vault" "main" {
-  name                          = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  name                          = "kv-${var.project_name}-${var.environment}-${local.resource_suffix}"
   location                      = azurerm_resource_group.main.location
   resource_group_name           = azurerm_resource_group.main.name
   tenant_id                     = data.azurerm_client_config.current.tenant_id
@@ -182,7 +187,7 @@ resource "azurerm_role_assignment" "external_secrets_key_vault_reader" {
 resource "azurerm_postgresql_flexible_server" "main" {
   count = var.create_managed_postgres ? 1 : 0
 
-  name                          = "psql-${local.name_prefix}-${random_string.suffix.result}"
+  name                          = "psql-${local.name_prefix}-${local.resource_suffix}"
   resource_group_name           = azurerm_resource_group.main.name
   location                      = azurerm_resource_group.main.location
   version                       = var.postgres_version
@@ -190,7 +195,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
   private_dns_zone_id           = azurerm_private_dns_zone.postgres.id
   public_network_access_enabled = false
   administrator_login           = var.postgres_admin_username
-  administrator_password        = random_password.postgres_admin.result
+  administrator_password        = var.manage_generated_key_vault_secrets ? random_password.postgres_admin[0].result : null
   sku_name                      = var.postgres_sku_name
   storage_mb                    = var.postgres_storage_mb
   tags                          = local.common_tags
@@ -201,6 +206,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
   lifecycle {
     ignore_changes = [
+      administrator_password,
       zone
     ]
   }
@@ -215,8 +221,10 @@ resource "azurerm_postgresql_flexible_server_database" "app" {
 }
 
 resource "azurerm_key_vault_secret" "postgres_password" {
+  count = var.manage_generated_key_vault_secrets ? 1 : 0
+
   name         = "civicfix-${var.environment}-postgres-password"
-  value        = random_password.postgres_admin.result
+  value        = random_password.postgres_admin[0].result
   key_vault_id = azurerm_key_vault.main.id
   tags         = local.common_tags
 
@@ -226,10 +234,10 @@ resource "azurerm_key_vault_secret" "postgres_password" {
 }
 
 resource "azurerm_key_vault_secret" "database_url" {
-  count = var.create_managed_postgres ? 1 : 0
+  count = var.create_managed_postgres && var.manage_generated_key_vault_secrets ? 1 : 0
 
   name         = "civicfix-${var.environment}-database-url"
-  value        = "postgres://${var.postgres_admin_username}:${urlencode(random_password.postgres_admin.result)}@${azurerm_postgresql_flexible_server.main[0].fqdn}:5432/${var.postgres_database_name}?sslmode=require"
+  value        = "postgres://${var.postgres_admin_username}:${urlencode(random_password.postgres_admin[0].result)}@${azurerm_postgresql_flexible_server.main[0].fqdn}:5432/${var.postgres_database_name}?sslmode=require"
   key_vault_id = azurerm_key_vault.main.id
   tags         = local.common_tags
 
@@ -267,7 +275,7 @@ resource "azurerm_storage_queue" "image_analysis_jobs" {
 }
 
 resource "azurerm_key_vault_secret" "storage_connection_string" {
-  count = var.create_storage_account ? 1 : 0
+  count = var.create_storage_account && var.manage_generated_key_vault_secrets ? 1 : 0
 
   name         = "civicfix-${var.environment}-storage-connection-string"
   value        = azurerm_storage_account.main[0].primary_connection_string
@@ -281,7 +289,7 @@ resource "azurerm_key_vault_secret" "storage_connection_string" {
 
 resource "azurerm_container_registry" "main" {
   count               = var.create_container_registry ? 1 : 0
-  name                = "acr${replace(var.project_name, "-", "")}${var.environment}${random_string.suffix.result}"
+  name                = "acr${replace(var.project_name, "-", "")}${var.environment}${local.resource_suffix}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku                 = "Basic"

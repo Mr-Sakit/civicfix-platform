@@ -21,6 +21,23 @@ variable "location" {
   default     = "swedencentral"
 }
 
+variable "resource_suffix" {
+  description = "Optional fixed resource suffix for existing environments imported into Terraform state. Leave null for new environments to use a generated suffix."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.resource_suffix == null || can(regex("^[a-z0-9]{6}$", var.resource_suffix))
+    error_message = "Resource suffix must be exactly 6 lowercase alphanumeric characters when set."
+  }
+}
+
+variable "manage_generated_key_vault_secrets" {
+  description = "Manage generated application secret values in Key Vault. Disable for imported production environments where secrets already exist and should not be rewritten into Terraform state."
+  type        = bool
+  default     = true
+}
+
 variable "address_space" {
   description = "Virtual network address space."
   type        = list(string)
