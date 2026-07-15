@@ -31,4 +31,4 @@ spec:
       kind: ClusterPolicy
       name: civicfix-verify-signed-images
       jsonPointers:
-        - /spec/rules/0/verifyImages/0/attestors/0/entries/0/keyless/signatureAlgorithm
+        - /spec/rules/0/verifyImages/0/attestors/0/entries/0/signatureAlgorithm
