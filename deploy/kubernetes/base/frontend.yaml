@@ -57,6 +57,9 @@ spec:
                 configMapKeyRef:
                   name: civicfix-app-config
                   key: VITE_API_BASE_URL
+          volumeMounts:
+            - name: vite-temp
+              mountPath: /app/node_modules/.vite-temp
           readinessProbe:
             httpGet:
               path: /
@@ -76,3 +79,6 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: vite-temp
+          emptyDir: {}
