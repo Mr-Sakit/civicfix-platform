@@ -19,6 +19,10 @@ spec:
       values: |
         crds:
           install: true
+          annotations:
+            argocd.argoproj.io/sync-options: Replace=true
+          migration:
+            enabled: false
         admissionController:
           replicas: 1
         backgroundController:
