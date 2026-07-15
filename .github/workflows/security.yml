@@ -60,14 +60,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Audit repository configuration with Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: misconfig
-          severity: HIGH,CRITICAL
-          format: table
-          exit-code: "0"
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            aquasec/trivy:0.68.1 fs \
+            --ignorefile /workspace/.trivyignore \
+            --scanners misconfig \
+            --severity HIGH,CRITICAL \
+            --format table \
+            --exit-code 1 \
+            /workspace
 
   container-image-scan:
     name: Container image vulnerability scan

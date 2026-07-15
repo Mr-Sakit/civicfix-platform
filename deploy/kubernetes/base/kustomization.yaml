@@ -11,6 +11,7 @@ resources:
   - backend.yaml
   - worker.yaml
   - frontend.yaml
+  - network-policies.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

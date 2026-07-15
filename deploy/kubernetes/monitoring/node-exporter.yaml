@@ -31,6 +31,10 @@ metadata:
     app.kubernetes.io/name: civicfix-node-exporter
     app.kubernetes.io/part-of: civicfix-platform
 spec:
+  # trivy:ignore:AVD-KSV-0121
+  # node-exporter requires read-only hostPath mounts for /proc, /sys, and /
+  # to expose node-level infrastructure metrics. The pod drops all capabilities,
+  # disables privilege escalation, runs as non-root, and mounts host paths read-only.
   selector:
     matchLabels:
       app.kubernetes.io/name: civicfix-node-exporter
@@ -43,11 +47,11 @@ spec:
         app.kubernetes.io/part-of: civicfix-platform
     spec:
       serviceAccountName: civicfix-node-exporter
-      hostNetwork: true
-      hostPID: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
       tolerations:
         - effect: NoSchedule
           operator: Exists

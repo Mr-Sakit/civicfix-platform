@@ -4,9 +4,9 @@ This folder contains the planned Azure infrastructure foundation for CivicFix Pl
 
 It is intentionally prepared as a skeleton for the future Azure/AKS stage. Do not apply it until the team has confirmed the Azure subscription, naming, region, and cost expectations.
 
-The default development settings are intentionally budget-conscious for the Student subscription path: one small AKS node, optional managed PostgreSQL, and no Azure Container Registry by default.
+The production settings provision AKS plus Azure Database for PostgreSQL Flexible Server. Student or constrained demo environments may disable managed PostgreSQL temporarily, but production should keep it enabled.
 
-Managed PostgreSQL is controlled by `create_managed_postgres`. It is disabled by default because Student subscriptions can hit regional PostgreSQL capacity restrictions. Enable it in the main capstone subscription when capacity is available.
+Managed PostgreSQL is controlled by `create_managed_postgres`. Set it to `true` for production. The GitHub Terraform plan/apply/drift workflows set `TF_VAR_create_managed_postgres=true` for the production execution path.
 
 ## Planned resources
 
@@ -75,7 +75,7 @@ Use the Terraform outputs to update:
 - GitOps/Argo CD target cluster configuration
 - Kubernetes ingress controller static public IP
 - DNS records for the frontend and API hostnames
-- PostgreSQL connection secrets in Azure Key Vault
+- PostgreSQL connection secrets in Azure Key Vault. Terraform writes `civicfix-<environment>-database-url`, and External Secrets Operator syncs it into Kubernetes as `DATABASE_URL`.
 
 ## Public access strategy
 

@@ -8,6 +8,13 @@ aks_node_vm_size = "Standard_D2s_v3"
 # Leave null to use rg-<project>-<environment>-nodes.
 aks_node_resource_group_name = null
 
+# Restrict these in real prod to trusted admin/VPN/runner egress CIDRs.
+# Example:
+# aks_api_server_authorized_ip_ranges = ["203.0.113.10/32"]
+# key_vault_allowed_ip_ranges        = ["203.0.113.10/32"]
+aks_api_server_authorized_ip_ranges = []
+key_vault_allowed_ip_ranges         = []
+
 # Reserves a stable public IP for the ingress controller.
 create_ingress_public_ip = true
 
@@ -15,9 +22,9 @@ postgres_sku_name   = "B_Standard_B2s"
 postgres_storage_mb = 32768
 postgres_version    = "16"
 
-# Student subscriptions can hit Azure PostgreSQL capacity restrictions.
-# Keep false for a low-friction Student AKS foundation; set true in the main capstone subscription.
-create_managed_postgres = false
+# Production uses Azure Database for PostgreSQL Flexible Server.
+# Use false only for constrained local/student demo environments.
+create_managed_postgres = true
 
 # CivicFix currently publishes images to GitHub Container Registry.
 # Set this to true later if the project decides to use Azure Container Registry.

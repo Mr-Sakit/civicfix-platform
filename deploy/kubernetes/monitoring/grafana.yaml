@@ -32,10 +32,26 @@ spec:
         app.kubernetes.io/name: civicfix-grafana
         app.kubernetes.io/part-of: civicfix-platform
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: grafana
           image: grafana/grafana:12.3.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 472
+            runAsGroup: 472
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
               containerPort: 3000
@@ -62,6 +78,10 @@ spec:
               cpu: 500m
               memory: 512Mi
           volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+            - name: grafana-tmp
+              mountPath: /tmp
             - name: grafana-datasources
               mountPath: /etc/grafana/provisioning/datasources
               readOnly: true
@@ -81,3 +101,7 @@ spec:
         - name: grafana-dashboards
           configMap:
             name: civicfix-grafana-dashboards
+        - name: grafana-data
+          emptyDir: {}
+        - name: grafana-tmp
+          emptyDir: {}
