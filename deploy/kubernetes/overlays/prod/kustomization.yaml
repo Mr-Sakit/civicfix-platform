@@ -11,9 +11,9 @@ resources:
 
 images:
   - name: ghcr.io/mr-sakit/civicfix-backend
-    digest: sha256:1997da30372869d68a30e90627493caf50fc61bb1b0a36c4185c47dadfb4638e
+    digest: sha256:a3ac7c1d9adec45bfd691ebc605954ef6f8092ec79146f2548ef59f88c28d1bb
   - name: ghcr.io/mr-sakit/civicfix-frontend
-    digest: sha256:6ac0817540bb781871d709bf59e7d2d39574cb8355cb7e892080a3e7e61d7b8e
+    digest: sha256:324bbc044cca209a7dfceb32ebe3100261c6f87fb40138352747f0d02d85e46a
 
 patches:
   - path: namespace-patch.yaml
