@@ -16,10 +16,13 @@ metadata:
       Security Standard. This starts in Audit mode so the team can verify
       compatibility before enforcing admission denial.
 spec:
+  admission: true
   validationFailureAction: Audit
+  emitWarning: false
   background: true
   rules:
     - name: restricted-pod-security
+      skipBackgroundRequests: true
       match:
         any:
           - resources:
@@ -28,6 +31,7 @@ spec:
               namespaces:
                 - civicfix-prod
       validate:
+        allowExistingViolations: true
         podSecurity:
           level: restricted
           version: latest

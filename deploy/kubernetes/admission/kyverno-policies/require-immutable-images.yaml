@@ -16,10 +16,13 @@ metadata:
       GitOps overlays should deploy immutable commit SHA tags, and this policy
       gives admission-level evidence of that requirement.
 spec:
+  admission: true
   validationFailureAction: Audit
+  emitWarning: false
   background: true
   rules:
     - name: block-latest-tag
+      skipBackgroundRequests: true
       match:
         any:
           - resources:
@@ -28,6 +31,7 @@ spec:
               namespaces:
                 - civicfix-prod
       validate:
+        allowExistingViolations: true
         message: Production Pods must not use mutable ':latest' image tags.
         foreach:
           - list: request.object.spec.containers[]

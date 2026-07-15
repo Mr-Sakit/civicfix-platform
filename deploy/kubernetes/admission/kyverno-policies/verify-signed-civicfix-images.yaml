@@ -16,11 +16,14 @@ metadata:
       signing. The expected identity is the GitHub Actions container delivery
       workflow on the main branch.
 spec:
+  admission: true
   validationFailureAction: Audit
+  emitWarning: false
   webhookTimeoutSeconds: 30
   background: false
   rules:
     - name: verify-ghcr-civicfix-images
+      skipBackgroundRequests: true
       match:
         any:
           - resources:
@@ -34,6 +37,7 @@ spec:
             - "ghcr.io/mr-sakit/civicfix-frontend:*"
           mutateDigest: false
           verifyDigest: true
+          useCache: true
           required: true
           attestors:
             - count: 1
@@ -43,3 +47,4 @@ spec:
                     issuer: "https://token.actions.githubusercontent.com"
                     rekor:
                       url: https://rekor.sigstore.dev
+                    signatureAlgorithm: sha256
