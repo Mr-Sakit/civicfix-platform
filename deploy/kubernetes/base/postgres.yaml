@@ -24,6 +24,7 @@ metadata:
 spec:
   serviceName: civicfix-postgres
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: civicfix-postgres

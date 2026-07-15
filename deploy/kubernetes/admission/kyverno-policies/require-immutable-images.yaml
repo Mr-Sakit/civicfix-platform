@@ -17,7 +17,7 @@ metadata:
       gives admission-level evidence of that requirement.
 spec:
   admission: true
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   emitWarning: false
   background: true
   rules:

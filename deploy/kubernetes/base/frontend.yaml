@@ -23,6 +23,7 @@ metadata:
     app.kubernetes.io/part-of: civicfix-platform
 spec:
   replicas: 2
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: civicfix-frontend
