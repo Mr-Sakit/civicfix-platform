@@ -1,7 +1,10 @@
-# Copy this file to backend.config and replace every placeholder.
-# Do not commit backend.config.
+# Copy this file to backend.config and replace every placeholder with the
+# values printed by backend/bootstrap-state.sh. Do not commit backend.config.
+#
+# Initialize with:
+#   terraform init -backend-config=backend/backend.config
 
-resource_group_name  = "<tfstate-resource-group>"
+resource_group_name  = "rg-civicfix-tfstate"
 storage_account_name = "<tfstate-storage-account>"
-container_name       = "<tfstate-container>"
-key                  = "<environment>/terraform.tfstate"
+container_name       = "tfstate"
+key                  = "civicfix-platform/dev/terraform.tfstate"

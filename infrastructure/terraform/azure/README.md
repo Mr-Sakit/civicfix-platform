@@ -40,19 +40,27 @@ terraform fmt -check -recursive infrastructure/terraform/azure
 
 ## Remote state
 
-Remote state is not active yet.
+Remote state is **active**. State is stored in Azure Storage via the partial
+backend configuration in `backend.tf` (Azure AD auth, blob-lease state locking).
+Concrete values are provided at init time from a git-ignored `backend.config`.
 
-Before a real team deployment, create an Azure Storage backend and enable the backend configuration documented in:
+First-time setup and initialization are documented in:
 
 - `backend/README.md`
-- `backend/backend.tf.example`
+- `backend/bootstrap-state.sh` (creates the state storage account/container)
 - `backend/backend.config.example`
 
-## Future deployment flow
+```bash
+./backend/bootstrap-state.sh
+cp backend/backend.config.example backend/backend.config   # then fill in values
+terraform init -backend-config=backend/backend.config
+```
 
-```powershell
+## Deployment flow
+
+```bash
 cd infrastructure/terraform/azure
-terraform init
+terraform init -backend-config=backend/backend.config
 terraform plan -var-file="terraform.tfvars"
 terraform apply -var-file="terraform.tfvars"
 ```
@@ -86,5 +94,5 @@ If the domain is managed in Cloudflare, the DNS records can also be managed with
 
 - `terraform.tfstate` files must never be committed.
 - Real secret values must stay in Azure Key Vault or Terraform state, not in Git.
-- The generated PostgreSQL password is sensitive and will be stored in Terraform state.
-- Before production use, configure a remote Terraform backend such as Azure Storage with state locking.
+- The generated PostgreSQL password is sensitive and will be stored in Terraform state (another reason state lives in access-controlled Azure Storage, not on a laptop).
+- The remote Azure Storage backend with blob-lease state locking is configured in `backend.tf`; run `backend/bootstrap-state.sh` and `terraform init -backend-config=backend/backend.config` before applying. Any pre-existing local `terraform.tfstate` should be migrated during that init and then deleted.

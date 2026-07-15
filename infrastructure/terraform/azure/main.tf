@@ -84,10 +84,13 @@ resource "azurerm_kubernetes_cluster" "main" {
   workload_identity_enabled = true
 
   default_node_pool {
-    name           = "system"
-    node_count     = var.aks_node_count
-    vm_size        = var.aks_node_vm_size
-    vnet_subnet_id = azurerm_subnet.aks.id
+    name                 = "system"
+    vm_size              = var.aks_node_vm_size
+    vnet_subnet_id       = azurerm_subnet.aks.id
+    auto_scaling_enabled = var.aks_enable_auto_scaling
+    node_count           = var.aks_enable_auto_scaling ? null : var.aks_node_count
+    min_count            = var.aks_enable_auto_scaling ? var.aks_min_node_count : null
+    max_count            = var.aks_enable_auto_scaling ? var.aks_max_node_count : null
 
     upgrade_settings {
       max_surge = "10%"
@@ -104,6 +107,14 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   tags = local.common_tags
+
+  lifecycle {
+    ignore_changes = [
+      # The cluster autoscaler manages node_count at runtime; ignore it so
+      # Terraform does not fight the autoscaler on every plan/apply.
+      default_node_pool[0].node_count
+    ]
+  }
 }
 
 resource "azurerm_public_ip" "ingress" {

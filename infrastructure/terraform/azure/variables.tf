@@ -46,9 +46,27 @@ variable "aks_kubernetes_version" {
 }
 
 variable "aks_node_count" {
-  description = "Default AKS node count. Keep dev/student deployments small; increase for production resilience."
+  description = "Initial AKS node count. Also the fixed node count when the cluster autoscaler is disabled."
   type        = number
-  default     = 1
+  default     = 3
+}
+
+variable "aks_enable_auto_scaling" {
+  description = "Enable the AKS cluster autoscaler on the default node pool."
+  type        = bool
+  default     = true
+}
+
+variable "aks_min_node_count" {
+  description = "Minimum node count when the cluster autoscaler is enabled."
+  type        = number
+  default     = 3
+}
+
+variable "aks_max_node_count" {
+  description = "Maximum node count when the cluster autoscaler is enabled."
+  type        = number
+  default     = 5
 }
 
 variable "aks_node_vm_size" {

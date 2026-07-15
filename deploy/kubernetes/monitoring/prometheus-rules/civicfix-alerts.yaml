@@ -1,5 +1,8 @@
 groups:
-  - name: civicfix.application
+  # ---------------------------------------------------------------------------
+  # Target / signal availability
+  # ---------------------------------------------------------------------------
+  - name: civicfix.availability
     rules:
       - alert: CivicFixBackendMetricsUnavailable
         expr: up{job="civicfix-backend"} == 0
@@ -11,6 +14,16 @@ groups:
           summary: CivicFix backend metrics endpoint is unavailable
           description: Prometheus cannot scrape the CivicFix backend /metrics endpoint for more than 2 minutes.
 
+      - alert: CivicFixWorkerMetricsUnavailable
+        expr: up{job="civicfix-ai-worker"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: civicfix-ai-worker
+        annotations:
+          summary: CivicFix AI worker metrics endpoint is unavailable
+          description: Prometheus cannot scrape the CivicFix AI worker /metrics endpoint for more than 5 minutes.
+
       - alert: CivicFixIssueMetricsMissing
         expr: absent(civicfix_issues_total)
         for: 5m
@@ -21,6 +34,201 @@ groups:
           summary: CivicFix issue metrics are missing
           description: The civicfix_issues_total metric is absent, which may mean the backend metrics endpoint changed or database-backed metrics are failing.
 
+      - alert: CivicFixMonitoringComponentDown
+        expr: up{job=~"kube-state-metrics|node-exporter"} == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: civicfix-monitoring
+        annotations:
+          summary: A monitoring component is down ({{ $labels.job }})
+          description: Prometheus has been unable to scrape {{ $labels.job }} on {{ $labels.instance }} for more than 10 minutes, degrading cluster observability.
+
+  # ---------------------------------------------------------------------------
+  # Application SLOs (error rate / latency / AI jobs)
+  # ---------------------------------------------------------------------------
+  - name: civicfix.slo
+    rules:
+      - alert: CivicFixBackendHighErrorRate
+        expr: |
+          sum(rate(civicfix_http_request_duration_seconds_count{job="civicfix-backend",status_code=~"5.."}[5m]))
+            /
+          sum(rate(civicfix_http_request_duration_seconds_count{job="civicfix-backend"}[5m]))
+            > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          service: civicfix-backend
+        annotations:
+          summary: CivicFix backend 5xx error rate is high
+          description: More than 5% of backend HTTP responses have been 5xx over the last 10 minutes.
+
+      - alert: CivicFixBackendHighLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(civicfix_http_request_duration_seconds_bucket{job="civicfix-backend"}[5m])) by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: civicfix-backend
+        annotations:
+          summary: CivicFix backend p95 latency is high
+          description: The 95th-percentile backend request latency has exceeded 1s for more than 10 minutes.
+
+      - alert: CivicFixAIJobsFailing
+        expr: |
+          sum(rate(civicfix_ai_jobs_total{status=~"error|failed|failure"}[15m])) > 0
+        for: 15m
+        labels:
+          severity: warning
+          service: civicfix-ai-worker
+        annotations:
+          summary: CivicFix AI image-analysis jobs are failing
+          description: The worker has been recording failed AI image-analysis jobs for more than 15 minutes.
+
+  # ---------------------------------------------------------------------------
+  # Workload health (pods / deployments / HPA / saturation)
+  # ---------------------------------------------------------------------------
+  - name: civicfix.workloads
+    rules:
+      - alert: CivicFixPodCrashLooping
+        expr: increase(kube_pod_container_status_restarts_total{namespace=~"civicfix.*"}[15m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping
+          description: Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} has restarted more than 3 times in 15 minutes.
+
+      - alert: CivicFixDeploymentReplicasUnavailable
+        expr: kube_deployment_status_replicas_unavailable{namespace=~"civicfix.*"} > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has unavailable replicas
+          description: "{{ $labels.deployment }} has had unavailable replicas for more than 15 minutes."
+
+      - alert: CivicFixContainerMemoryNearLimit
+        expr: |
+          max by (namespace, pod, container) (
+            container_memory_working_set_bytes{namespace=~"civicfix.*", container!=""}
+          )
+            /
+          max by (namespace, pod, container) (
+            kube_pod_container_resource_limits{namespace=~"civicfix.*", resource="memory"}
+          )
+            > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} is near its memory limit
+          description: Working-set memory has been above 90% of the container limit for 10 minutes; the container is at risk of being OOM killed.
+
+      - alert: CivicFixContainerCPUThrottlingHigh
+        expr: |
+          sum by (namespace, pod, container) (
+            rate(container_cpu_cfs_throttled_periods_total{namespace=~"civicfix.*", container!=""}[5m])
+          )
+            /
+          clamp_min(
+            sum by (namespace, pod, container) (
+              rate(container_cpu_cfs_periods_total{namespace=~"civicfix.*", container!=""}[5m])
+            ),
+            1
+          )
+            > 0.5
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} is being CPU throttled
+          description: More than 50% of CPU periods have been throttled for 15 minutes; consider raising the CPU limit.
+
+      - alert: CivicFixHPAMaxedOut
+        expr: |
+          kube_horizontalpodautoscaler_status_current_replicas{namespace="civicfix-prod"}
+            >=
+          kube_horizontalpodautoscaler_spec_max_replicas{namespace="civicfix-prod"}
+        for: 15m
+        labels:
+          severity: warning
+          service: civicfix-prod
+        annotations:
+          summary: HPA {{ $labels.horizontalpodautoscaler }} is at max replicas
+          description: The autoscaler has been pinned at its maximum replica count for 15 minutes; sustained load may require raising maxReplicas.
+
+  # ---------------------------------------------------------------------------
+  # Nodes and storage
+  # ---------------------------------------------------------------------------
+  - name: civicfix.infrastructure
+    rules:
+      - alert: CivicFixNodeNotReady
+        expr: kube_node_status_condition{condition="Ready", status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Node {{ $labels.node }} is not ready
+          description: Node {{ $labels.node }} has been NotReady for more than 5 minutes.
+
+      - alert: CivicFixNodeHighMemory
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Node {{ $labels.instance }} memory usage is high
+          description: Node memory usage has been above 90% for 15 minutes.
+
+      - alert: CivicFixNodeHighCPU
+        expr: |
+          1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Node {{ $labels.instance }} CPU usage is high
+          description: Node CPU usage has been above 90% for 15 minutes.
+
+      - alert: CivicFixNodeDiskAlmostFull
+        expr: |
+          (
+            1 - (
+              node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}
+                /
+              node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}
+            )
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Filesystem on {{ $labels.instance }} ({{ $labels.mountpoint }}) is almost full
+          description: Less than 15% of disk space remains on {{ $labels.mountpoint }} for more than 10 minutes.
+
+      - alert: CivicFixPersistentVolumeAlmostFull
+        expr: |
+          kubelet_volume_stats_used_bytes{namespace=~"civicfix.*"}
+            /
+          kubelet_volume_stats_capacity_bytes{namespace=~"civicfix.*"}
+            > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is almost full
+          description: The persistent volume is more than 85% full; Prometheus/Postgres storage may need to grow.
+
+  # ---------------------------------------------------------------------------
+  # Business / operations (retained from the original rules)
+  # ---------------------------------------------------------------------------
+  - name: civicfix.operations
+    rules:
       - alert: CivicFixUnresolvedIssuesPresent
         expr: sum(civicfix_issues_by_status{status!="resolved"}) > 0
         for: 30m
@@ -40,4 +248,3 @@ groups:
         annotations:
           summary: CivicFix assigned backlog is present
           description: Assigned CivicFix issue reports have remained open for more than 1 hour.
-
