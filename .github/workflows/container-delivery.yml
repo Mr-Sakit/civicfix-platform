@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
   packages: write
 
 env:
@@ -34,7 +35,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
       - name: Build and publish backend image
+        id: build-backend
         uses: docker/build-push-action@v6
         with:
           context: ./backend
@@ -44,6 +49,7 @@ jobs:
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
 
       - name: Build and publish frontend image
+        id: build-frontend
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
@@ -51,3 +57,13 @@ jobs:
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+      - name: Sign backend image digest
+        env:
+          COSIGN_YES: "true"
+        run: cosign sign "${{ env.BACKEND_IMAGE }}@${{ steps.build-backend.outputs.digest }}"
+
+      - name: Sign frontend image digest
+        env:
+          COSIGN_YES: "true"
+        run: cosign sign "${{ env.FRONTEND_IMAGE }}@${{ steps.build-frontend.outputs.digest }}"

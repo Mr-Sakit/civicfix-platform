@@ -83,6 +83,9 @@ jobs:
       - name: Render Kubernetes monitoring
         run: kubectl kustomize deploy/kubernetes/monitoring
 
+      - name: Render Kyverno admission policies
+        run: kubectl kustomize deploy/kubernetes/admission/kyverno-policies
+
       - name: Render External Secrets Azure Key Vault manifests
         run: kubectl kustomize deploy/kubernetes/secrets/external-secrets/azure-key-vault
 

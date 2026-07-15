@@ -58,4 +58,6 @@ Runbooks:
 - [Ingress and TLS](runbooks/ingress-tls.md)
 - [Secret management](runbooks/secret-management.md)
 - [Terraform foundation](runbooks/terraform.md)
+- [Terraform through GitHub Actions](runbooks/terraform-github-actions.md)
+- [Admission control](runbooks/admission-control.md)
 - [Azure deployment prerequisites](runbooks/azure-deployment-prerequisites.md)

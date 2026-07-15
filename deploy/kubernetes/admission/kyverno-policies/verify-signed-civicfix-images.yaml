@@ -1,0 +1,45 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: civicfix-verify-signed-images
+  labels:
+    app.kubernetes.io/name: civicfix-admission-policy
+    app.kubernetes.io/part-of: civicfix-platform
+    civicfix.io/control: image-signing
+  annotations:
+    policies.kyverno.io/title: CivicFix Verify Signed Application Images
+    policies.kyverno.io/category: Software Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Audits CivicFix application image signatures using Sigstore keyless
+      signing. The expected identity is the GitHub Actions container delivery
+      workflow on the main branch.
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  background: false
+  rules:
+    - name: verify-ghcr-civicfix-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - civicfix-prod
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/mr-sakit/civicfix-backend:*"
+            - "ghcr.io/mr-sakit/civicfix-frontend:*"
+          mutateDigest: false
+          verifyDigest: true
+          required: true
+          attestors:
+            - count: 1
+              entries:
+                - keyless:
+                    subject: "https://github.com/Mr-Sakit/civicfix-platform/.github/workflows/container-delivery.yml@refs/heads/main"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev
