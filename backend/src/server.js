@@ -9,7 +9,7 @@ import { sendStoredImage } from "./imageResponse.js";
 import { observeHttpRequest, registry } from "./metrics.js";
 import { ensureQueueReady } from "./queue.js";
 import { ensureStorageReady, loadImageObject, saveImageObject } from "./storage.js";
-import { hashPassword, requireAuth, requireRole, signToken, verifyPassword } from "./auth.js";
+import { hashPassword, isCompanyEmail, requireAuth, requireRole, signToken, verifyPassword } from "./auth.js";
 import { categorizeIssue, compareBeforeAfterPhotos, comparePhotoSimilarity, matchPhotoToDescription } from "./gemini.js";
 
 const app = express();
@@ -391,6 +391,8 @@ const parseCitizenSignup = (body) => {
   const fullName = String(body.fullName ?? "").trim();
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
+  const role = String(body.role ?? "citizen");
+  const teamId = body.teamId ? Number(body.teamId) : null;
 
   const validationErrors = [];
   if (!fullName) validationErrors.push("fullName");
@@ -404,7 +406,19 @@ const parseCitizenSignup = (body) => {
     );
   }
 
-  return { fullName, email, password };
+  if (!["citizen", "admin", "crew"].includes(role)) {
+    throw createHttpError(400, "Invalid role");
+  }
+
+  if (role !== "citizen" && !isCompanyEmail(email)) {
+    throw createHttpError(400, "Admin and crew accounts require a @civicfix.local company email");
+  }
+
+  if (role === "crew" && !Number.isInteger(teamId)) {
+    throw createHttpError(400, "Crew accounts must select a team");
+  }
+
+  return { fullName, email, password, role, teamId };
 };
 
 app.post("/api/auth/login", authRateLimit, async (request, response, next) => {
@@ -448,8 +462,15 @@ app.post("/api/auth/login", authRateLimit, async (request, response, next) => {
 
 app.post("/api/auth/signup", authRateLimit, async (request, response, next) => {
   try {
-    const { fullName, email, password } = parseCitizenSignup(request.body);
+    const { fullName, email, password, role, teamId } = parseCitizenSignup(request.body);
     const passwordHash = await hashPassword(password);
+
+    if (role === "crew") {
+      const team = await query("SELECT id FROM teams WHERE id = $1", [teamId]);
+      if (team.rowCount === 0) {
+        return response.status(400).json({ message: "Selected team does not exist" });
+      }
+    }
 
     const inserted = await query(
       `
@@ -458,7 +479,7 @@ app.post("/api/auth/signup", authRateLimit, async (request, response, next) => {
         FROM roles WHERE roles.name = $5
         RETURNING id
       `,
-      [fullName, email, passwordHash, null, FRONTEND_ROLE_TO_ROLE_NAME.citizen]
+      [fullName, email, passwordHash, role === "crew" ? teamId : null, FRONTEND_ROLE_TO_ROLE_NAME[role]]
     );
 
     const created = await query(
